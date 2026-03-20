@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dotnet: build",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/goldfish.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "npm: build",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "build"
+      ],
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "build",
+      "dependsOn": [
+        "dotnet: build",
+        "npm: build"
+      ],
+      "dependsOrder": "sequence",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "tsc: watch - tsconfig.json",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "watch"
+      ],
+      "isBackground": true,
+      "problemMatcher": "$tsc-watch"
+    }
+  ]
+}
