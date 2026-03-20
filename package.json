@@ -1,0 +1,13 @@
+{
+  "name": "goldfish",
+  "version": "1.0.0",
+  "description": "Goldfish - ASP.NET Core 8.0 Razor Pages with TypeScript",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "tsc --watch & dotnet watch run"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
