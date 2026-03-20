@@ -11,15 +11,24 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="state-ok">
-    <div id="segment-title">Loading&hellip;</div>
-    <div id="timer">--:--</div>
-    <div id="progress-bar-track">
-        <div id="progress-bar-fill"></div>
-    </div>
-    <div id="next-segment"></div>
-    <div id="total-remaining"></div>
-    <div id="keyboard-hints">Space pause/resume · ← previous · → next · I toggle info</div>
-    <div id="info-panel" class="info-panel"></div>
+    <main class="app-layout">
+        <section class="panel panel-left" aria-label="Timing and flow">
+            <div id="segment-title">Loading&hellip;</div>
+            <div id="timer">--:--</div>
+            <div id="progress-bar-track">
+                <div id="progress-bar-fill"></div>
+            </div>
+            <div class="flow-meta">
+                <div id="next-segment"></div>
+                <div id="total-remaining"></div>
+            </div>
+            <div id="keyboard-hints">Space pause/resume · ← previous · → next</div>
+        </section>
+
+        <section class="panel panel-right" aria-label="Supporting information">
+            <div id="info-panel" class="info-panel"></div>
+        </section>
+    </main>
     <script type="module" src="~/js/main.js" asp-append-version="true"></script>
 </body>
 </html>

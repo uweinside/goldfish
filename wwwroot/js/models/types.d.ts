@@ -1,8 +1,12 @@
+export interface InfoSection {
+    label: string;
+    items: string[];
+}
 export interface Segment {
     title: string;
     duration: number;
     type?: 'lecture' | 'demo' | 'break';
-    notes?: string[];
+    info?: InfoSection[];
 }
 export interface Timeline {
     segments: Segment[];

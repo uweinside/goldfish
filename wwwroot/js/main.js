@@ -3,9 +3,8 @@ import { render } from './ui/renderer.js';
 async function init() {
     const response = await fetch('/data/gh-300.json');
     const timeline = await response.json();
-    let infoVisible = true;
     function tick() {
-        render(timeline, goldfishState, infoVisible);
+        render(timeline, goldfishState);
     }
     document.addEventListener('keydown', (e) => {
         switch (e.code) {
@@ -20,10 +19,6 @@ async function init() {
             case 'ArrowLeft':
                 e.preventDefault();
                 previousSegment(timeline);
-                break;
-            case 'KeyI':
-                e.preventDefault();
-                infoVisible = !infoVisible;
                 break;
         }
     });

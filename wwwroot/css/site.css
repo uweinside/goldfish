@@ -11,16 +11,42 @@ html, body {
 }
 
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 2rem 4rem;
+    padding: 1.5rem;
     font-family: system-ui, -apple-system, sans-serif;
     transition: background-color 0.4s ease, color 0.4s ease;
     background-color: #1a2b1a;
     color: #d4ffd4;
     user-select: none;
+}
+
+.app-layout {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.panel {
+    min-height: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(3px);
+}
+
+.panel-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+}
+
+.panel-right {
+    overflow-y: auto;
+    padding: 1.5rem;
 }
 
 /* ── Color states ───────────────────────────────────── */
@@ -30,7 +56,7 @@ body.state-over { background-color: #2b1414; color: #ffd4d4; }
 
 /* ── Segment title ──────────────────────────────────── */
 #segment-title {
-    font-size: clamp(2rem, 4.5vw, 5rem);
+    font-size: clamp(1.8rem, 3.2vw, 4.2rem);
     font-weight: 700;
     text-align: center;
     letter-spacing: -0.02em;
@@ -45,7 +71,7 @@ body.type-break   #segment-title { color: #a8a8a8; }
 
 /* ── Timer (dominant element) ───────────────────────── */
 #timer {
-    font-size: clamp(7rem, 22vw, 22rem);
+    font-size: clamp(5rem, 14vw, 14rem);
     font-family: 'Courier New', 'Consolas', monospace;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -61,7 +87,7 @@ body.paused #timer {
 
 /* ── Progress bar ───────────────────────────────────── */
 #progress-bar-track {
-    width: 100%;
+    width: min(100%, 40rem);
     height: 6px;
     background: rgba(255, 255, 255, 0.12);
     border-radius: 3px;
@@ -77,24 +103,28 @@ body.paused #timer {
 
 /* ── Next segment ───────────────────────────────────── */
 #next-segment {
-    font-size: clamp(1rem, 2.2vw, 2.5rem);
+    font-size: clamp(1rem, 1.5vw, 1.75rem);
     text-align: center;
     opacity: 0.6;
 }
 
 /* ── Session total remaining ────────────────────────── */
 #total-remaining {
-    font-size: clamp(0.75rem, 1.2vw, 1.5rem);
+    font-size: clamp(0.75rem, 1vw, 1.2rem);
     text-align: center;
     opacity: 0.35;
 }
 
+.flow-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 /* ── Keyboard hints ─────────────────────────────────── */
 #keyboard-hints {
-    position: fixed;
-    left: 50%;
-    bottom: calc(35vh + 0.6rem);
-    transform: translateX(-50%);
+    margin-top: 0.75rem;
     font-size: clamp(0.7rem, 1vw, 1rem);
     letter-spacing: 0.03em;
     opacity: 0.55;
@@ -105,37 +135,55 @@ body.paused #timer {
     transition: opacity 0.2s ease;
 }
 
-/* ── Info panel (keyboard toggle: i) ───────────────── */
+/* ── Info panel ─────────────────────────────────────── */
 .info-panel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.88);
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(6px);
-    padding: 1.5rem 4rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 2rem 4rem;
-    max-height: 35vh;
-    overflow-y: auto;
-    transform: translateY(0);
-    opacity: 1;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    gap: 1.5rem;
+    min-height: 100%;
+    align-content: flex-start;
 }
 
-.info-panel.hidden {
-    transform: translateY(100%);
-    opacity: 0;
-    pointer-events: none;
-}
+@media (max-width: 1000px) {
+    html, body {
+        overflow-y: auto;
+    }
 
-@media (max-width: 700px) {
+    body {
+        height: auto;
+    }
+
+    .app-layout {
+        height: auto;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+    }
+
+    .panel-left {
+        justify-content: flex-start;
+        padding: 1.25rem;
+    }
+
+    .panel-right {
+        overflow: visible;
+        padding: 1rem;
+    }
+
+    #timer {
+        font-size: clamp(4rem, 20vw, 9rem);
+    }
+
+    #segment-title {
+        font-size: clamp(1.5rem, 7vw, 2.8rem);
+    }
+
     #keyboard-hints {
-        bottom: calc(35vh + 0.35rem);
-        width: calc(100% - 1.5rem);
+        width: 100%;
         text-align: center;
+    }
+
+    .info-panel {
+        min-height: 0;
     }
 }
 
