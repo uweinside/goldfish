@@ -4,9 +4,10 @@ const elTimer = document.getElementById('timer');
 const elProgressFill = document.getElementById('progress-bar-fill');
 const elNextSegment = document.getElementById('next-segment');
 const elTotalRemaining = document.getElementById('total-remaining');
+const elInfoPanel = document.getElementById('info-panel');
 const STATE_CLASSES = ['state-ok', 'state-warn', 'state-over'];
 const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'];
-export function render(timeline, state) {
+export function render(timeline, state, infoVisible) {
     const segment = timeline.segments[state.currentSegmentIndex];
     const secondsRemaining = getSecondsRemaining(segment, state);
     elTimer.textContent = formatTime(secondsRemaining);
@@ -36,5 +37,31 @@ export function render(timeline, state) {
         elNextSegment.textContent = 'Last segment';
     }
     elTotalRemaining.textContent = `Session remaining: ${formatTime(getTotalRemainingSeconds(timeline, state))}`;
+    if (infoVisible) {
+        elInfoPanel.classList.remove('hidden');
+        elInfoPanel.innerHTML = '';
+        if (segment.info && segment.info.length > 0) {
+            for (const section of segment.info) {
+                const sectionEl = document.createElement('div');
+                sectionEl.className = 'info-section';
+                const labelEl = document.createElement('h3');
+                labelEl.className = 'info-label';
+                labelEl.textContent = section.label;
+                sectionEl.appendChild(labelEl);
+                const listEl = document.createElement('ul');
+                listEl.className = 'info-items';
+                for (const item of section.items) {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    listEl.appendChild(li);
+                }
+                sectionEl.appendChild(listEl);
+                elInfoPanel.appendChild(sectionEl);
+            }
+        }
+    }
+    else {
+        elInfoPanel.classList.add('hidden');
+    }
 }
 //# sourceMappingURL=renderer.js.map

@@ -89,3 +89,88 @@ body.paused #timer {
     opacity: 0.35;
 }
 
+/* ── Keyboard hints ─────────────────────────────────── */
+#keyboard-hints {
+    position: fixed;
+    left: 50%;
+    bottom: calc(35vh + 0.6rem);
+    transform: translateX(-50%);
+    font-size: clamp(0.7rem, 1vw, 1rem);
+    letter-spacing: 0.03em;
+    opacity: 0.55;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: opacity 0.2s ease;
+}
+
+/* ── Info panel (keyboard toggle: i) ───────────────── */
+.info-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.88);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(6px);
+    padding: 1.5rem 4rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem 4rem;
+    max-height: 35vh;
+    overflow-y: auto;
+    transform: translateY(0);
+    opacity: 1;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.info-panel.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (max-width: 700px) {
+    #keyboard-hints {
+        bottom: calc(35vh + 0.35rem);
+        width: calc(100% - 1.5rem);
+        text-align: center;
+    }
+}
+
+.info-section {
+    min-width: 16rem;
+    flex: 1;
+}
+
+.info-label {
+    font-size: clamp(0.7rem, 1.1vw, 1.1rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 0.5rem;
+}
+
+.info-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.info-items li {
+    font-size: clamp(0.9rem, 1.5vw, 1.6rem);
+    opacity: 0.9;
+    padding-left: 1rem;
+    position: relative;
+}
+
+.info-items li::before {
+    content: '–';
+    position: absolute;
+    left: 0;
+    opacity: 0.45;
+}
+
