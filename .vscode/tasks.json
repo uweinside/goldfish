@@ -24,14 +24,21 @@
     {
       "label": "build",
       "dependsOn": [
-        "dotnet: build",
-        "npm: build"
+        "dotnet: build"
       ],
       "dependsOrder": "sequence",
       "group": {
         "kind": "build",
         "isDefault": true
       }
+    },
+    {
+      "label": "build:all",
+      "dependsOn": [
+        "dotnet: build",
+        "npm: build"
+      ],
+      "dependsOrder": "sequence"
     },
     {
       "label": "tsc: watch - tsconfig.json",
