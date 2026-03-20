@@ -1,0 +1,73 @@
+{
+  "segments": [
+    {
+      "title": "Welcome & Framing",
+      "duration": 600,
+      "type": "lecture",
+      "notes": [
+        "Copilot supports developers, does not replace thinking",
+        "Focus on workflows, not configuration",
+        "Deeper execution comes later (AZ-2007)"
+      ]
+    },
+    {
+      "title": "Copilot Fundamentals & Product Model",
+      "duration": 1500,
+      "type": "lecture",
+      "notes": [
+        "IDE suggestions vs inline chat",
+        "Workflow: Idea → Code → Test → Document → Review → Iterate",
+        "Individual vs team productivity"
+      ]
+    },
+    {
+      "title": "Responsible AI & Validation Mindset",
+      "duration": 1800,
+      "type": "demo",
+      "notes": [
+        "Copilot output is not final truth",
+        "Risks: incorrect logic, security gaps, bias, over-reliance",
+        "Importance of testing and review"
+      ]
+    },
+    {
+      "title": "Break",
+      "duration": 600,
+      "type": "break"
+    },
+    {
+      "title": "Core Developer Workflows",
+      "duration": 2700,
+      "type": "demo",
+      "notes": [
+        "Where Copilot saves time",
+        "What still requires human judgment"
+      ]
+    },
+    {
+      "title": "Break",
+      "duration": 600,
+      "type": "break"
+    },
+    {
+      "title": "Testing & Quality Workflows",
+      "duration": 1500,
+      "type": "demo",
+      "notes": [
+        "Test generation",
+        "Fixing failing tests",
+        "Code explanation and review"
+      ]
+    },
+    {
+      "title": "Wrap Up & Next Steps",
+      "duration": 1500,
+      "type": "lecture",
+      "notes": [
+        "Copilot accelerates workflows",
+        "Validation is essential",
+        "GH-300 is foundational"
+      ]
+    }
+  ]
+}

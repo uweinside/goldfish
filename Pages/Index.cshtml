@@ -1,8 +1,23 @@
 @page
-@model IndexModel
 @{
-    ViewData["Title"] = "Home";
+    Layout = null;
 }
-
-<h1>Welcome to Goldfish</h1>
-<p>Your ASP.NET Core 8.0 Razor Pages + TypeScript application is ready!</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CuePilot</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="state-ok">
+    <div id="segment-title">Loading&hellip;</div>
+    <div id="timer">--:--</div>
+    <div id="progress-bar-track">
+        <div id="progress-bar-fill"></div>
+    </div>
+    <div id="next-segment"></div>
+    <div id="total-remaining"></div>
+    <script type="module" src="~/js/main.js" asp-append-version="true"></script>
+</body>
+</html>
