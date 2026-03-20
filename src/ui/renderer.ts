@@ -7,6 +7,7 @@ const elProgressFill = document.getElementById('progress-bar-fill')!;
 const elNextSegment = document.getElementById('next-segment')!;
 const elTotalRemaining = document.getElementById('total-remaining')!;
 const elInfoPanel = document.getElementById('info-panel')!;
+const elPauseButton = document.getElementById('btn-pause');
 
 const STATE_CLASSES = ['state-ok', 'state-warn', 'state-over'] as const;
 const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'] as const;
@@ -44,6 +45,9 @@ export function render(timeline: Timeline, state: AppState): void {
         document.body.classList.add('paused');
     } else {
         document.body.classList.remove('paused');
+    }
+    if (elPauseButton) {
+        elPauseButton.textContent = state.isPaused ? 'Resume (Space)' : 'Pause (Space)';
     }
 
     // Next segment

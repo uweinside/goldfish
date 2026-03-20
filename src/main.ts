@@ -27,6 +27,22 @@ async function init(): Promise<void> {
         }
     });
 
+    const btnPrev = document.getElementById('btn-prev');
+    const btnPause = document.getElementById('btn-pause');
+    const btnNext = document.getElementById('btn-next');
+
+    btnPrev?.addEventListener('click', () => {
+        previousSegment(timeline);
+    });
+
+    btnPause?.addEventListener('click', () => {
+        pauseResume();
+    });
+
+    btnNext?.addEventListener('click', () => {
+        advanceSegment(timeline);
+    });
+
     tick(); // render immediately before first interval
     setInterval(tick, 100);
 }
