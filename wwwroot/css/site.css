@@ -569,7 +569,7 @@ body.type-break   #segment-title { color: #d9d5cf; }
     flex-direction: column;
     align-items: center;
     gap: 2rem;
-    padding: 2rem 2rem 3rem;
+    padding: 2rem 2rem 0.5rem;
     overflow-y: auto;
 }
 
@@ -738,5 +738,13 @@ body.type-break   #segment-title { color: #d9d5cf; }
     .course-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.start-footer {
+    margin-top: auto;
+    padding: 0 1rem;
+    color: #555;
+    font-size: 1rem;
+    text-align: center;
 }
 
