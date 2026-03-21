@@ -2,44 +2,51 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "dotnet: build",
+      "label": "tauri: dev",
       "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "build",
-        "${workspaceFolder}/goldfish.csproj"
-      ],
-      "problemMatcher": "$msCompile"
-    },
-    {
-      "label": "npm: build",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "build"
-      ],
-      "problemMatcher": "$tsc"
-    },
-    {
-      "label": "build",
-      "dependsOn": [
-        "dotnet: build"
-      ],
-      "dependsOrder": "sequence",
-      "group": {
-        "kind": "build",
-        "isDefault": true
+      "command": "npm.cmd",
+      "args": ["run", "tauri:dev"],
+      "options": {
+        "env": {
+          "PATH": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "tauri",
+        "pattern": {
+          "regexp": "^(ERROR|error)\\[(.*)\\]: (.*)",
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Running beforeDevCommand",
+          "endsPattern": "Tauri app window opened"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
       }
     },
     {
-      "label": "build:all",
-      "dependsOn": [
-        "dotnet: build",
-        "npm: build"
-      ],
-      "dependsOrder": "sequence"
-    },
+      "label": "tauri: build",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": ["run", "tauri:build"],
+      "options": {
+        "env": {
+          "PATH": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
     {
       "label": "tsc: watch - tsconfig.json",
       "type": "shell",
