@@ -1,0 +1,5 @@
+[target.x86_64-pc-windows-gnu]
+# Prevent static archive symbols from being re-exported through the cdylib.
+# Without this, GNU ld exports every symbol from every linked rlib into the DLL,
+# which quickly exceeds Windows PE's 65535 ordinal limit for large crate trees.
+rustflags = ["-C", "link-arg=-Wl,--exclude-libs,ALL"]
