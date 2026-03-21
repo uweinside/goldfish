@@ -20,7 +20,8 @@
       "type": "msedge",
       "request": "attach",
       "port": 9222,
-      "webRoot": "${workspaceFolder}/src"
+      "webRoot": "${workspaceFolder}/src",
+      "preLaunchTask": "tauri: dev"
     }
   ],
   "compounds": [
