@@ -57,9 +57,11 @@ export function render(timeline, state) {
     elTotalRemaining.textContent = formatTime(getTotalRemainingSeconds(timeline, state));
     elInfoPanel.innerHTML = '';
     if (segment.info && segment.info.length > 0) {
-        for (const section of segment.info) {
+        for (let i = 0; i < segment.info.length; i++) {
+            const section = segment.info[i];
             const sectionEl = document.createElement('div');
-            sectionEl.className = 'info-section';
+            const priority = i === 0 ? 'info-section-primary' : i === 1 ? 'info-section-secondary' : 'info-section-tertiary';
+            sectionEl.className = `info-section ${priority}`;
             const labelEl = document.createElement('h3');
             labelEl.className = 'info-label';
             labelEl.textContent = section.label;
