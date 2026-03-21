@@ -216,7 +216,15 @@ body.paused #timer {
     box-shadow: var(--shadow);
 }
 
-.meta-label,
+.meta-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
 .info-label {
     display: block;
     margin-bottom: 0.4rem;
@@ -324,7 +332,7 @@ body.paused #timer {
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.035);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--section-accent, #6B7280);
+    border-left: 4px solid var(--section-accent, #6B7280);
     backdrop-filter: blur(6px);
     box-shadow: var(--shadow);
 }
