@@ -11,9 +11,12 @@ const elPauseButton = document.getElementById('btn-pause');
 const elSegmentKicker = document.getElementById('segment-kicker')!;
 const elSegmentBadgeText = document.getElementById('segment-badge-text')!;
 const elTimerState = document.getElementById('timer-state')!;
+const elLeftPanel = document.querySelector('.panel-left') as HTMLElement | null;
+const elRightPanel = document.querySelector('.panel-right') as HTMLElement | null;
 
 const STATE_CLASSES = ['state-ok', 'state-warn', 'state-over'] as const;
 const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'] as const;
+let lastRenderedSegmentIndex = -1;
 
 const SECTION_COLORS: Record<string, string> = {
     focus: '#60A5FA',
@@ -34,6 +37,19 @@ function getSectionColor(label: string): string {
 
 export function render(timeline: Timeline, state: AppState): void {
     const segment = timeline.segments[state.currentSegmentIndex];
+    const hasSegmentChanged = lastRenderedSegmentIndex !== -1 && lastRenderedSegmentIndex !== state.currentSegmentIndex;
+    if (hasSegmentChanged) {
+        const panels: (HTMLElement | null)[] = [elLeftPanel, elRightPanel];
+        for (const panel of panels) {
+            if (!panel) continue;
+            panel.classList.remove('panel-crossfade');
+            // Force reflow so repeated same-class animations restart.
+            void panel.offsetWidth;
+            panel.classList.add('panel-crossfade');
+        }
+    }
+    lastRenderedSegmentIndex = state.currentSegmentIndex;
+
     const secondsRemaining = getSecondsRemaining(segment, state);
     const nextIndex = state.currentSegmentIndex + 1;
     const nextSegment = nextIndex < timeline.segments.length ? timeline.segments[nextIndex] : undefined;

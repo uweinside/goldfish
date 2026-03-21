@@ -74,6 +74,16 @@ body {
     flex-direction: column;
 }
 
+@keyframes panelCrossfade {
+    from { opacity: 0.32; }
+    to { opacity: 1; }
+}
+
+.panel-left.panel-crossfade,
+.panel-right.panel-crossfade {
+    animation: panelCrossfade 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
 .segment-badge {
     flex: 0 0 auto;
 }
@@ -460,6 +470,13 @@ body.type-break   #segment-title { color: #d9d5cf; }
 
     .meta-row {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel-left.panel-crossfade,
+    .panel-right.panel-crossfade {
+        animation: none !important;
     }
 }
 
