@@ -24,6 +24,7 @@ interface GitHubContentEntry {
 export async function listCourses(): Promise<CourseEntry[]> {
     const res = await fetch(CONTENTS_URL, {
         headers: { 'Accept': 'application/vnd.github.v3+json' },
+        cache: 'no-store',
     });
     if (!res.ok) {
         throw new Error(`Failed to list courses: ${res.status} ${res.statusText}`);
@@ -54,7 +55,7 @@ export async function loadCourse(courseId: string): Promise<Timeline> {
 }
 
 async function fetchTimeline(url: string): Promise<Timeline> {
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
         throw new Error(`Failed to fetch course data: ${res.status} ${res.statusText}`);
     }
