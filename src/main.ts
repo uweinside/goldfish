@@ -1,11 +1,11 @@
 import { Timeline } from './models/types.js';
 import { goldfishState, advanceSegment, previousSegment, pauseResume } from './core/state.js';
 import { render } from './ui/renderer.js';
+import timelineData from './data/gh-300.json';
 
-async function init(): Promise<void> {
-    const response = await fetch('/data/gh-300.json');
-    const timeline: Timeline = await response.json();
+const timeline = timelineData as Timeline;
 
+function init(): void {
     function tick(): void {
         render(timeline, goldfishState);
     }
@@ -48,5 +48,5 @@ async function init(): Promise<void> {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    init().catch(console.error);
+    init();
 });

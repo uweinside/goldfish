@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CuePilot</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="state-ok">
+    <main class="app-layout">
+        <section class="panel panel-left" aria-label="Timing and flow">
+            <div class="device-card-header">
+                <div>
+                    <p id="segment-kicker" class="card-kicker">CuePilot</p>
+                    <div id="segment-title">Loading...</div>
+                </div>
+                <div class="segment-badge" aria-hidden="true">
+                    <span id="segment-badge-text">C</span>
+                </div>
+            </div>
+
+            <div class="timer-row">
+                <div class="timer-meta">
+                    <span class="timer-label">Timer</span>
+                    <span id="timer-state" class="timer-state">On track</span>
+                </div>
+                <div id="timer">--:--</div>
+            </div>
+
+            <div id="progress-bar-track">
+                <div id="progress-bar-fill"></div>
+            </div>
+
+            <div class="meta-row">
+                <div class="meta-card">
+                    <span class="meta-label">Next</span>
+                    <div id="next-segment">--</div>
+                </div>
+                <div class="meta-card">
+                    <span class="meta-label">Session Remaining</span>
+                    <div id="total-remaining" class="meta-timer">--:--</div>
+                </div>
+            </div>
+
+            <div id="controls" class="controls-row" aria-label="Manual segment controls">
+                <button id="btn-pause" class="control-btn control-btn-primary" type="button" aria-label="Pause or resume timer">
+                    <span class="control-symbol" aria-hidden="true">II</span>
+                    <span class="control-text">Pause</span>
+                </button>
+                <button id="btn-prev" class="control-btn" type="button" aria-label="Previous segment">
+                    <span class="control-symbol" aria-hidden="true">&larr;</span>
+                    <span class="control-text">Prev</span>
+                </button>
+                <button id="btn-next" class="control-btn" type="button" aria-label="Next segment">
+                    <span class="control-text">Next</span>
+                    <span class="control-symbol" aria-hidden="true">&rarr;</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="panel panel-right" aria-label="Supporting information">
+            <div id="info-panel" class="info-panel"></div>
+        </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
