@@ -130,10 +130,10 @@ export function render(timeline: Timeline, state: AppState): void {
     } else {
         const drift = getScheduleDrift(timeline, state);
         if (drift > 30) {
-            elScheduleDrift.textContent = `${formatTime(drift)} ahead`;
+            elScheduleDrift.textContent = `${formatTime(Math.round(drift))} ahead`;
             elScheduleDrift.classList.add('drift-ahead');
         } else if (drift < -30) {
-            elScheduleDrift.textContent = `${formatTime(-drift)} behind`;
+            elScheduleDrift.textContent = `${formatTime(Math.round(-drift))} behind`;
             elScheduleDrift.classList.add('drift-behind');
         } else {
             elScheduleDrift.textContent = 'On schedule';
