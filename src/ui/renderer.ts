@@ -15,6 +15,23 @@ const elTimerState = document.getElementById('timer-state')!;
 const STATE_CLASSES = ['state-ok', 'state-warn', 'state-over'] as const;
 const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'] as const;
 
+const SECTION_COLORS: Record<string, string> = {
+    focus: '#60A5FA',
+    objective: '#60A5FA',
+    talking: '#2DD4BF',
+    prompt: '#FBBF24',
+    demo: '#A78BFA',
+    rule: '#F87171',
+};
+
+function getSectionColor(label: string): string {
+    const lower = label.toLowerCase();
+    for (const [keyword, color] of Object.entries(SECTION_COLORS)) {
+        if (lower.includes(keyword)) return color;
+    }
+    return '#6B7280';
+}
+
 export function render(timeline: Timeline, state: AppState): void {
     const segment = timeline.segments[state.currentSegmentIndex];
     const secondsRemaining = getSecondsRemaining(segment, state);
@@ -85,6 +102,7 @@ export function render(timeline: Timeline, state: AppState): void {
             const sectionEl = document.createElement('div');
             const priority = i === 0 ? 'info-section-primary' : i === 1 ? 'info-section-secondary' : 'info-section-tertiary';
             sectionEl.className = `info-section ${priority}`;
+            sectionEl.style.setProperty('--section-accent', getSectionColor(section.label));
 
             const labelEl = document.createElement('h3');
             labelEl.className = 'info-label';
