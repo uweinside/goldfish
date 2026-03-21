@@ -1,0 +1,131 @@
+{
+  "title": "Azure Cloud Operations with AI",
+  "segments": [
+    {
+      "title": "Welcome & Scenario Setup",
+      "duration": 480,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Trainer Focus",
+          "items": [
+            "Set expectation: practical cloud operations with AI assistance",
+            "Align audience on baseline Azure terminology",
+            "Frame class outcomes around reliability and speed"
+          ]
+        },
+        {
+          "label": "Talking Points",
+          "items": [
+            "Where Copilot helps in daily cloud tasks",
+            "Why validation matters for operational changes",
+            "How this class differs from architecture classes"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Reading Cloud Signals",
+      "duration": 1500,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Objective",
+          "items": [
+            "Interpret logs, metrics, and alerts faster"
+          ]
+        },
+        {
+          "label": "Trainer Focus",
+          "items": [
+            "Connect monitoring signals to probable causes",
+            "Model good triage behavior under pressure"
+          ]
+        },
+        {
+          "label": "Chat Prompts",
+          "items": [
+            "What signal do you trust most during incidents?"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Incident Triage Demo",
+      "duration": 1800,
+      "type": "demo",
+      "info": [
+        {
+          "label": "Demos",
+          "items": [
+            "Summarize noisy alerts into concise incident notes",
+            "Generate a first-pass troubleshooting checklist",
+            "Draft rollback communication for stakeholders"
+          ]
+        },
+        {
+          "label": "Rules",
+          "items": [
+            "Never apply generated fixes without review",
+            "Confirm blast radius before any remediation"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Break",
+      "duration": 600,
+      "type": "break",
+      "info": [
+        {
+          "label": "Trainer Focus",
+          "items": [
+            "Post return time clearly",
+            "Resume exactly on schedule"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Operational Automation Patterns",
+      "duration": 1800,
+      "type": "demo",
+      "info": [
+        {
+          "label": "Objective",
+          "items": [
+            "Use AI to speed routine operational scripting"
+          ]
+        },
+        {
+          "label": "Talking Points",
+          "items": [
+            "Template generation for common runbooks",
+            "Safe defaults for automation scripts",
+            "Human checkpoints in automated flows"
+          ]
+        },
+        {
+          "label": "Reaction Prompts",
+          "items": [
+            "Where could automation save your team the most time?"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Wrap Up & Next Steps",
+      "duration": 900,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Next Steps",
+          "items": [
+            "Pilot one incident triage checklist this week",
+            "Adopt one reviewed automation template"
+          ]
+        }
+      ]
+    }
+  ]
+}

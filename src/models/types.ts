@@ -11,6 +11,7 @@ export interface Segment {
 }
 
 export interface Timeline {
+    title?: string;
     segments: Segment[];
 }
 

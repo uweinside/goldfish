@@ -1,0 +1,115 @@
+{
+  "title": "AI-Powered Web Development",
+  "segments": [
+    {
+      "title": "Kickoff & Delivery Goals",
+      "duration": 420,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Trainer Focus",
+          "items": [
+            "Clarify focus on web team delivery workflows",
+            "Set pace expectation: demo-heavy and practical"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Scaffold to First Commit",
+      "duration": 1500,
+      "type": "demo",
+      "info": [
+        {
+          "label": "Objective",
+          "items": [
+            "Generate and refine app scaffolding quickly"
+          ]
+        },
+        {
+          "label": "Demos",
+          "items": [
+            "Create starter layout and route structure",
+            "Generate baseline components from intent",
+            "Add accessibility hints and semantic markup"
+          ]
+        },
+        {
+          "label": "Rules",
+          "items": [
+            "Keep generated code consistent with team conventions"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Feature Development Loop",
+      "duration": 2100,
+      "type": "demo",
+      "info": [
+        {
+          "label": "Talking Points",
+          "items": [
+            "Prompting for edge cases before coding",
+            "Incremental edits over large one-shot generations",
+            "Balancing speed with maintainability"
+          ]
+        },
+        {
+          "label": "Chat Prompts",
+          "items": [
+            "Which feature type takes your team longest today?"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Break",
+      "duration": 600,
+      "type": "break",
+      "info": [
+        {
+          "label": "Trainer Focus",
+          "items": [
+            "Maintain schedule discipline"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Testing and Review Workflow",
+      "duration": 1500,
+      "type": "demo",
+      "info": [
+        {
+          "label": "Objective",
+          "items": [
+            "Use AI support for stronger pull requests"
+          ]
+        },
+        {
+          "label": "Demos",
+          "items": [
+            "Generate unit test skeletons for a new feature",
+            "Refine failing tests with minimal code churn",
+            "Draft concise PR description with risk notes"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Wrap Up",
+      "duration": 780,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Next Steps",
+          "items": [
+            "Apply the feature loop on one active ticket",
+            "Add AI-assisted test generation to team definition of done"
+          ]
+        }
+      ]
+    }
+  ]
+}

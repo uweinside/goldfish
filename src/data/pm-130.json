@@ -1,0 +1,108 @@
+{
+  "title": "AI-Assisted Team Productivity",
+  "segments": [
+    {
+      "title": "Opening & Team Productivity Baseline",
+      "duration": 480,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Trainer Focus",
+          "items": [
+            "Define productivity outcomes clearly",
+            "Align on realistic expectations for AI-assisted work"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Prompt Design for Team Workflows",
+      "duration": 1440,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Objective",
+          "items": [
+            "Create reusable prompt patterns for common team tasks"
+          ]
+        },
+        {
+          "label": "Talking Points",
+          "items": [
+            "Context blocks and constraints",
+            "Role framing for consistent outputs",
+            "Defining acceptance criteria in prompts"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Collaboration Demo",
+      "duration": 1800,
+      "type": "demo",
+      "info": [
+        {
+          "label": "Demos",
+          "items": [
+            "Draft planning notes from raw requirements",
+            "Generate implementation checklist from user story",
+            "Produce concise status update for stakeholders"
+          ]
+        },
+        {
+          "label": "Chat Prompts",
+          "items": [
+            "Which handoff in your team causes the most delay?"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Break",
+      "duration": 600,
+      "type": "break",
+      "info": [
+        {
+          "label": "Trainer Focus",
+          "items": [
+            "Keep the session on schedule"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Quality and Consistency Guardrails",
+      "duration": 1320,
+      "type": "demo",
+      "info": [
+        {
+          "label": "Objective",
+          "items": [
+            "Use guardrails to improve reliability of generated content"
+          ]
+        },
+        {
+          "label": "Rules",
+          "items": [
+            "Always review generated plans before execution",
+            "Version and refine shared team prompts"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Wrap Up & Commitments",
+      "duration": 900,
+      "type": "lecture",
+      "info": [
+        {
+          "label": "Next Steps",
+          "items": [
+            "Publish one team-approved prompt template",
+            "Measure one productivity metric over two weeks"
+          ]
+        }
+      ]
+    }
+  ]
+}

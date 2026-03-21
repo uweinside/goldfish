@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
     // Serve wwwroot at / so existing CSS and data paths are unchanged
@@ -10,6 +11,12 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         emptyOutDir: true,
+        rollupOptions: {
+            input: {
+                main: resolve(__dirname, 'index.html'),
+                timer: resolve(__dirname, 'timer.html'),
+            },
+        },
     },
 });
 

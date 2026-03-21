@@ -74,6 +74,16 @@ body {
     flex-direction: column;
 }
 
+@keyframes panelCrossfade {
+    from { opacity: 0.32; }
+    to { opacity: 1; }
+}
+
+.panel-left.panel-crossfade,
+.panel-right.panel-crossfade {
+    animation: panelCrossfade 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
 .segment-badge {
     flex: 0 0 auto;
 }
@@ -93,6 +103,13 @@ body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-bottom: 0.45rem;
+    line-height: 1.15;
+    min-height: calc(2 * 1.15em);
+    max-height: calc(2 * 1.15em);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 #segment-title {
@@ -102,6 +119,12 @@ body {
     text-align: left;
     letter-spacing: -0.02em;
     line-height: 1.02;
+    min-height: calc(2 * 1.02em);
+    max-height: calc(2 * 1.02em);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     max-width: 16ch;
     transition: color 0.3s ease;
 }
@@ -239,6 +262,12 @@ body.paused #timer {
     font-weight: 500;
     letter-spacing: -0.02em;
     line-height: 1.4;
+    min-height: calc(2 * 1.4em);
+    max-height: calc(2 * 1.4em);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
@@ -251,6 +280,10 @@ body.paused #timer {
     font-feature-settings: 'tnum' 1;
     letter-spacing: -0.04em;
     line-height: 1;
+    min-height: calc(2 * 1em);
+    max-height: calc(2 * 1em);
+    display: flex;
+    align-items: flex-start;
 }
 
 .controls-row {
@@ -436,6 +469,118 @@ body.type-break   #segment-title { color: #d9d5cf; }
     }
 
     .meta-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel-left.panel-crossfade,
+    .panel-right.panel-crossfade {
+        animation: none !important;
+    }
+}
+
+/* ── Start Page ── */
+
+.start-layout {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.app-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.app-subtitle {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: -0.5rem;
+}
+
+.course-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 64rem;
+}
+
+.course-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1.25rem 1.35rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-main);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(245, 158, 11, 0.15);
+}
+
+.course-card:active {
+    transform: translateY(0);
+}
+
+.course-card:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.72);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.28);
+}
+
+.course-code {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+}
+
+.course-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.1rem, 1.6vw, 1.45rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.course-meta {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+@media (max-width: 1000px) {
+    .course-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .course-grid {
         grid-template-columns: 1fr;
     }
 }
