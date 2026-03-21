@@ -35,6 +35,15 @@ function renderCourseGrid(): void {
 
     grid.innerHTML = '';
 
+    if (courses.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'course-empty';
+        empty.textContent = 'No courses available';
+        grid.appendChild(empty);
+        grid.classList.add('grid-loaded');
+        return;
+    }
+
     for (const course of courses) {
         const { id, data } = course;
         const title = data.title ?? id.toUpperCase();
@@ -53,6 +62,8 @@ function renderCourseGrid(): void {
 
         grid.appendChild(card);
     }
+
+    grid.classList.add('grid-loaded');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
