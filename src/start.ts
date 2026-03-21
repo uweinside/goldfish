@@ -1,24 +1,4 @@
-import { Timeline } from './models/types.js';
-import gh300 from './data/gh-300.json';
-import az110 from './data/az-110.json';
-import ds150 from './data/ds-150.json';
-import pm130 from './data/pm-130.json';
-import sec260 from './data/sec-260.json';
-import wd210 from './data/wd-210.json';
-
-interface CourseEntry {
-    id: string;
-    data: Timeline;
-}
-
-const courses: CourseEntry[] = [
-    { id: 'gh-300', data: gh300 as Timeline },
-    { id: 'az-110', data: az110 as Timeline },
-    { id: 'ds-150', data: ds150 as Timeline },
-    { id: 'pm-130', data: pm130 as Timeline },
-    { id: 'sec-260', data: sec260 as Timeline },
-    { id: 'wd-210', data: wd210 as Timeline },
-];
+import { listCourses, CourseEntry } from './core/data-loader.js';
 
 function formatDuration(totalSeconds: number): string {
     const hours = Math.floor(totalSeconds / 3600);
@@ -29,7 +9,7 @@ function formatDuration(totalSeconds: number): string {
     return `${minutes}m`;
 }
 
-function renderCourseGrid(): void {
+function renderCourseGrid(courses: CourseEntry[]): void {
     const grid = document.getElementById('course-grid');
     if (!grid) return;
 
@@ -66,6 +46,23 @@ function renderCourseGrid(): void {
     grid.classList.add('grid-loaded');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    renderCourseGrid();
+function renderError(message: string): void {
+    const grid = document.getElementById('course-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'course-empty';
+    el.textContent = message;
+    grid.appendChild(el);
+    grid.classList.add('grid-loaded');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const courses = await listCourses();
+        renderCourseGrid(courses);
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        renderError(`Could not load courses: ${msg}`);
+    }
 });
