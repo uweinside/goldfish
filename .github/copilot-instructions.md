@@ -4,7 +4,7 @@
 
 CuePilot is a **glanceable presentation timing assistant** designed for instructors delivering structured sessions.
 
-It runs as a **web app** on a secondary screen and provides real-time situational awareness:
+It runs as a **Tauri v2 native desktop app** on a secondary monitor and provides real-time situational awareness:
 
 * Where am I in the flow?
 * How much time is left in the current segment?
@@ -65,11 +65,16 @@ Implement the smallest useful version first:
 Use a simple, strongly typed structure.
 
 ```ts
+interface InfoSection {
+  label: string;
+  items: string[];
+}
+
 interface Segment {
   title: string;
   duration: number; // seconds
   type?: "lecture" | "demo" | "break";
-  notes?: string[];
+  info?: InfoSection[];
 }
 
 interface Timeline {
@@ -82,9 +87,9 @@ Runtime state:
 ```ts
 interface AppState {
   currentSegmentIndex: number;
-  segmentStartTime: number;
+  segmentStartTime: number; // Date.now() when segment effectively started (adjusted for pauses)
   isPaused: boolean;
-  pausedAt?: number;
+  pausedAt?: number; // Date.now() when paused
 }
 ```
 
@@ -104,43 +109,46 @@ Preferred approach:
 
 ## 🎨 UI Requirements
 
-### Layout (single screen, fullscreen)
+### Layout (two-panel, fullscreen)
 
-Top:
+**Left panel** — Timing & flow:
 
-* Current segment title (large, bold)
-
-Center:
-
-* Countdown timer (very large, dominant)
-
-Below:
-
+* Header: segment kicker (type + status), title, segment type badge
+* Timer row: label, state text ("On track" / "Wrapping up" / "Overtime" / "Paused"), large countdown
 * Progress bar (visual only)
+* Meta row: next segment title + session remaining
+* Controls row: Pause/Resume, Prev, Next buttons
 
-Bottom:
+**Right panel** — Supporting information:
 
-* Next segment (single line)
-
-Optional (small text):
-
-* Total remaining time
+* `info` sections for the current segment, rendered as labelled lists
+* First section is primary (largest), subsequent sections are secondary/tertiary
+* Each section has a color accent derived from its label keyword
 
 ---
 
 ### Color System
 
-Use color to communicate state:
+Use color to communicate state on `document.body`:
 
-* Green → on track
-* Yellow → last 20% of segment
-* Red → overtime
+* `state-ok` (green) → on track
+* `state-warn` (yellow) → last 20% of segment
+* `state-over` (red) → overtime
 
-Segment type accents:
+Segment type classes on `document.body`:
 
-* Lecture → blue
-* Demo → purple
-* Break → neutral/gray
+* `type-lecture` → blue accent
+* `type-demo` → purple accent
+* `type-break` → neutral/gray accent
+
+Info section accent colors (derived from `label` keyword):
+
+* `focus` / `objective` → `#60A5FA` (blue)
+* `talking` → `#2DD4BF` (teal)
+* `prompt` → `#FBBF24` (amber)
+* `demo` → `#A78BFA` (purple)
+* `rule` → `#F87171` (red)
+* (default) → `#6B7280` (gray)
 
 ---
 
@@ -162,14 +170,14 @@ Segment type accents:
 
 ---
 
-## ⚡ Performance Constraints
+## ⚡ Tech Stack & Performance Constraints
 
-* Must run smoothly in a browser tab on a secondary monitor
+* **Runtime**: Tauri v2 native desktop app (Rust backend + WebView frontend)
+* **Frontend**: Vanilla TypeScript + Vite (no UI framework)
+* **Target**: `x86_64-pc-windows-gnu` (MinGW/GNU toolchain)
+* **Dependencies**: minimal — `@tauri-apps/cli`, `vite`, `typescript` only
+* Must run smoothly fullscreen on a secondary monitor
 * Avoid heavy frameworks unless justified
-* Prefer:
-
-  * Vanilla TypeScript
-  * Minimal dependencies
 
 ---
 
