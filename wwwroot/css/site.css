@@ -93,6 +93,13 @@ body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-bottom: 0.45rem;
+    line-height: 1.15;
+    min-height: calc(2 * 1.15em);
+    max-height: calc(2 * 1.15em);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 #segment-title {
@@ -102,6 +109,12 @@ body {
     text-align: left;
     letter-spacing: -0.02em;
     line-height: 1.02;
+    min-height: calc(2 * 1.02em);
+    max-height: calc(2 * 1.02em);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     max-width: 16ch;
     transition: color 0.3s ease;
 }
@@ -239,6 +252,12 @@ body.paused #timer {
     font-weight: 500;
     letter-spacing: -0.02em;
     line-height: 1.4;
+    min-height: calc(2 * 1.4em);
+    max-height: calc(2 * 1.4em);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
@@ -251,6 +270,10 @@ body.paused #timer {
     font-feature-settings: 'tnum' 1;
     letter-spacing: -0.04em;
     line-height: 1;
+    min-height: calc(2 * 1em);
+    max-height: calc(2 * 1em);
+    display: flex;
+    align-items: flex-start;
 }
 
 .controls-row {
