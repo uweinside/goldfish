@@ -80,7 +80,10 @@ export function render(timeline: Timeline, state: AppState): void {
         secondsRemaining <= segment.duration * 0.2 ? 'Wrapping up' :
         'On track';
     elTimerState.textContent = timerStateText;
-    elSegmentKicker.textContent = `${typeLabel} segment ${state.isPaused ? 'paused' : 'in progress'}`;
+    const kickerStatus = state.isPaused
+        ? (state.hasStarted ? 'paused' : 'ready')
+        : 'in progress';
+    elSegmentKicker.textContent = `${typeLabel} segment ${kickerStatus}`;
 
     // Segment type accent
     TYPE_CLASSES.forEach(c => document.body.classList.remove(c));
@@ -95,9 +98,14 @@ export function render(timeline: Timeline, state: AppState): void {
         document.body.classList.remove('paused');
     }
     if (elPauseButton) {
-        elPauseButton.innerHTML = state.isPaused
-            ? '<span class="control-symbol" aria-hidden="true">></span><span class="control-text">Resume</span>'
-            : '<span class="control-symbol" aria-hidden="true">II</span><span class="control-text">Pause</span>';
+        const pauseLabel = state.isPaused
+            ? (state.hasStarted ? 'Resume' : 'Start')
+            : 'Pause';
+        const pauseSymbol = state.isPaused ? '>' : 'II';
+        const symbolEl = elPauseButton.querySelector('.control-symbol');
+        const textEl = elPauseButton.querySelector('.control-text');
+        if (symbolEl) symbolEl.textContent = pauseSymbol;
+        if (textEl) textEl.textContent = pauseLabel;
     }
 
     // Next segment

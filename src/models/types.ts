@@ -20,4 +20,5 @@ export interface AppState {
     segmentStartTime: number; // Date.now() when segment effectively started (adjusted for pauses)
     isPaused: boolean;
     pausedAt?: number; // Date.now() when paused
+    hasStarted: boolean; // true once the user starts the timer for the first time
 }

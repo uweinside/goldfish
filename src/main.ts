@@ -51,6 +51,13 @@ async function init(): Promise<void> {
         }
     });
 
+    // Prevent Space keyup from triggering a synthetic click on focused buttons
+    document.addEventListener('keyup', (e: KeyboardEvent) => {
+        if (e.code === 'Space') {
+            e.preventDefault();
+        }
+    });
+
     const btnPrev = document.getElementById('btn-prev');
     const btnPause = document.getElementById('btn-pause');
     const btnNext = document.getElementById('btn-next');
