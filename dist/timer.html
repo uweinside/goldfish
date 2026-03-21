@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CuePilot</title>
     <link rel="stylesheet" href="/css/site.css" />
-  <script type="module" crossorigin src="/assets/timer-COaxJShE.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Cf3xff8G.js">
+  <script type="module" crossorigin src="/assets/timer-CYrNEaqM.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/data-loader-D69P5eZE.js">
 </head>
 <body class="state-ok">
     <main class="app-layout">
@@ -41,6 +41,7 @@
                 <div class="meta-card">
                     <span class="meta-label">Session Remaining</span>
                     <div id="total-remaining" class="meta-timer">--:--</div>
+                    <span id="schedule-drift" class="meta-drift"></span>
                 </div>
             </div>
 
@@ -57,12 +58,28 @@
                     <span class="control-text">Next</span>
                     <span class="control-symbol" aria-hidden="true">&rarr;</span>
                 </button>
+                <button id="btn-exit" class="control-btn control-btn-exit" type="button" aria-label="Back to course selection">
+                    <span class="control-symbol" aria-hidden="true">&times;</span>
+                    <span class="control-text">Exit</span>
+                </button>
             </div>
         </section>
 
         <section class="panel panel-right" aria-label="Supporting information">
             <div id="info-panel" class="info-panel"></div>
         </section>
-    </main>
+    </main>
+
+    <div id="exit-modal" class="modal-overlay" hidden>
+        <div class="modal-card">
+            <h2 class="modal-title">End this session?</h2>
+            <p class="modal-message">Timer progress will not be saved.</p>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="control-btn control-btn-primary" type="button">Stay</button>
+                <button id="modal-confirm" class="control-btn" type="button">Exit</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

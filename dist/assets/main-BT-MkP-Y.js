@@ -1,5 +1,0 @@
-import"./modulepreload-polyfill-Cf3xff8G.js";import{t as e}from"./gh-300-rp5jdTAp.js";import{t}from"./az-110-C8hy2nD6.js";import{t as n}from"./ds-150-DyIIWmn1.js";import{t as r}from"./pm-130-D7ugYOfT.js";import{t as i}from"./sec-260-DtFIwOKe.js";import{t as a}from"./wd-210-CTVT-cf3.js";var o=[{id:`gh-300`,data:e},{id:`az-110`,data:t},{id:`ds-150`,data:n},{id:`pm-130`,data:r},{id:`sec-260`,data:i},{id:`wd-210`,data:a}];function s(e){let t=Math.floor(e/3600),n=Math.floor(e%3600/60);return t>0?n>0?`${t}h ${n}m`:`${t}h`:`${n}m`}function c(){let e=document.getElementById(`course-grid`);if(e)for(let t of o){let{id:n,data:r}=t,i=r.title??n.toUpperCase(),a=r.segments.length,o=r.segments.reduce((e,t)=>e+t.duration,0),c=document.createElement(`a`);c.href=`timer.html?course=${encodeURIComponent(n)}`,c.className=`course-card`,c.innerHTML=`
-            <span class="course-code">${n.toUpperCase()}</span>
-            <span class="course-title">${i}</span>
-            <span class="course-meta">${a} segments · ${s(o)}</span>
-        `,e.appendChild(c)}}document.addEventListener(`DOMContentLoaded`,()=>{c()});

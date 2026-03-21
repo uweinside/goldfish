@@ -286,6 +286,28 @@ body.paused #timer {
     align-items: flex-start;
 }
 
+.meta-drift {
+    display: block;
+    margin-top: 0.35rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    min-height: 1.2em;
+}
+
+.drift-ahead {
+    color: #22C55E;
+}
+
+.drift-behind {
+    color: #ea7861;
+}
+
+.drift-on-schedule {
+    color: var(--text-muted, rgba(255, 255, 255, 0.46));
+}
+
 .controls-row {
     display: flex;
     align-items: center;
@@ -339,6 +361,64 @@ body.paused #timer {
 
 .control-btn-primary:hover {
     transform: translateY(-1px);
+}
+
+.control-btn-exit {
+    margin-left: auto;
+}
+
+/* ── Exit Confirmation Modal ── */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+}
+
+.modal-overlay[hidden] {
+    display: none;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 24rem;
+    padding: 2rem 2.2rem;
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.modal-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.modal-message {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.8rem;
+}
+
+.modal-actions .control-btn {
+    flex: 1;
 }
 
 .control-symbol {
@@ -484,13 +564,21 @@ body.type-break   #segment-title { color: #d9d5cf; }
 
 .start-layout {
     width: 100%;
-    height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     gap: 2rem;
-    padding: 2rem;
+    padding: 2rem 2rem 3rem;
+    overflow-y: auto;
+}
+
+.start-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
 }
 
 .app-title {
@@ -502,13 +590,16 @@ body.type-break   #segment-title { color: #d9d5cf; }
     line-height: 1;
 }
 
+.app-title-accent {
+    color: var(--accent-strong);
+}
+
 .app-subtitle {
     color: var(--text-muted);
     font-size: 1.05rem;
     font-weight: 500;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    margin-top: -0.5rem;
 }
 
 .course-grid {
@@ -557,6 +648,8 @@ body.type-break   #segment-title { color: #d9d5cf; }
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent-strong);
+    line-height: 1.4;
+    min-height: calc(0.82rem * 1.4);
 }
 
 .course-title {
@@ -565,11 +658,73 @@ body.type-break   #segment-title { color: #d9d5cf; }
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.25;
+    min-height: calc(2 * 1.25em);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
 }
 
 .course-meta {
     font-size: 0.88rem;
     color: var(--text-secondary);
+    font-weight: 500;
+    line-height: 1.4;
+    min-height: calc(0.88rem * 1.4);
+}
+
+/* ── Skeleton Loading Cards ── */
+
+.course-card-skeleton {
+    pointer-events: none;
+}
+
+.skeleton-line {
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-code {
+    width: 4.5rem;
+    min-height: calc(0.82rem * 1.4);
+    animation-delay: 0s;
+}
+
+.skeleton-title {
+    width: 80%;
+    min-height: calc(1.45rem * 1.25 * 2);
+    animation-delay: 0.12s;
+}
+
+.skeleton-meta {
+    width: 60%;
+    min-height: calc(0.88rem * 1.4);
+    animation-delay: 0.24s;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+@keyframes gridFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.course-grid.grid-loaded > .course-card {
+    animation: gridFadeIn 320ms ease-out both;
+}
+
+/* Empty State */
+
+.course-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    font-size: 1.1rem;
     font-weight: 500;
 }
 

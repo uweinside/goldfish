@@ -44,6 +44,43 @@
         "isDefault": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "vite: dev server",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": ["run", "dev"],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^$",
+          "message": 0
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE",
+          "endsPattern": "Local:\\s+http"
+        }
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "cargo: build debug",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build"],
+      "options": {
+        "cwd": "${workspaceFolder}/src-tauri",
+        "env": {
+          "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}"
+        }
+      },
+      "group": "build",
+      "problemMatcher": "$rustc"
     }
   ]
 }
