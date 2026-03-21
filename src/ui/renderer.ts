@@ -8,6 +8,9 @@ const elNextSegment = document.getElementById('next-segment')!;
 const elTotalRemaining = document.getElementById('total-remaining')!;
 const elInfoPanel = document.getElementById('info-panel')!;
 const elPauseButton = document.getElementById('btn-pause');
+const elSegmentKicker = document.getElementById('segment-kicker')!;
+const elSegmentBadgeText = document.getElementById('segment-badge-text')!;
+const elTimerState = document.getElementById('timer-state')!;
 
 const STATE_CLASSES = ['state-ok', 'state-warn', 'state-over'] as const;
 const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'] as const;
@@ -15,12 +18,16 @@ const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'] as const;
 export function render(timeline: Timeline, state: AppState): void {
     const segment = timeline.segments[state.currentSegmentIndex];
     const secondsRemaining = getSecondsRemaining(segment, state);
+    const nextIndex = state.currentSegmentIndex + 1;
+    const nextSegment = nextIndex < timeline.segments.length ? timeline.segments[nextIndex] : undefined;
+    const typeLabel = segment.type ? `${segment.type[0].toUpperCase()}${segment.type.slice(1)}` : 'Flow';
 
     // Timer display
     elTimer.textContent = formatTime(secondsRemaining);
 
     // Segment title
     elTitle.textContent = segment.title;
+    elSegmentBadgeText.textContent = (segment.type?.[0] ?? segment.title[0] ?? 'C').toUpperCase();
 
     // Progress bar (0–100%, clamps at both ends; stays full during overtime)
     const elapsed = (segment.duration - Math.max(secondsRemaining, 0)) / segment.duration;
@@ -33,6 +40,14 @@ export function render(timeline: Timeline, state: AppState): void {
         'state-ok';
     STATE_CLASSES.forEach(c => document.body.classList.remove(c));
     document.body.classList.add(stateClass);
+
+    const timerStateText =
+        state.isPaused ? 'Paused' :
+        secondsRemaining < 0 ? 'Overtime' :
+        secondsRemaining <= segment.duration * 0.2 ? 'Wrapping up' :
+        'On track';
+    elTimerState.textContent = timerStateText;
+    elSegmentKicker.textContent = `${typeLabel} segment ${state.isPaused ? 'paused' : 'in progress'}`;
 
     // Segment type accent
     TYPE_CLASSES.forEach(c => document.body.classList.remove(c));
@@ -47,19 +62,20 @@ export function render(timeline: Timeline, state: AppState): void {
         document.body.classList.remove('paused');
     }
     if (elPauseButton) {
-        elPauseButton.textContent = state.isPaused ? 'Resume (Space)' : 'Pause (Space)';
+        elPauseButton.innerHTML = state.isPaused
+            ? '<span class="control-symbol" aria-hidden="true">></span><span class="control-text">Resume</span>'
+            : '<span class="control-symbol" aria-hidden="true">II</span><span class="control-text">Pause</span>';
     }
 
     // Next segment
-    const nextIndex = state.currentSegmentIndex + 1;
-    if (nextIndex < timeline.segments.length) {
-        elNextSegment.textContent = `Next: ${timeline.segments[nextIndex].title}`;
+    if (nextSegment) {
+        elNextSegment.textContent = nextSegment.title;
     } else {
         elNextSegment.textContent = 'Last segment';
     }
 
     // Total session remaining
-    elTotalRemaining.textContent = `Session remaining: ${formatTime(getTotalRemainingSeconds(timeline, state))}`;
+    elTotalRemaining.textContent = formatTime(getTotalRemainingSeconds(timeline, state));
 
     // Info panel is always visible
     elInfoPanel.innerHTML = '';
