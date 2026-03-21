@@ -10,7 +10,8 @@
       "cwd": "${workspaceFolder}/src-tauri",
       "preLaunchTask": "cargo: build debug",
       "env": {
-        "RUST_LOG": "debug"
+        "RUST_LOG": "debug",
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS": "--remote-debugging-port=9222"
       },
       "sourceLanguages": ["rust"]
     },
