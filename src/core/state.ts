@@ -6,10 +6,19 @@ export const goldfishState: AppState = {
     isPaused: true,
     pausedAt: Date.now(),
     hasStarted: false,
+    sessionEndTime: 0,
 };
+
+function initSessionEndTime(timeline: Timeline): void {
+    if (!goldfishState.hasStarted) {
+        const totalMs = timeline.segments.reduce((s, seg) => s + seg.duration, 0) * 1000;
+        goldfishState.sessionEndTime = Date.now() + totalMs;
+    }
+}
 
 export function advanceSegment(timeline: Timeline): void {
     if (goldfishState.currentSegmentIndex < timeline.segments.length - 1) {
+        initSessionEndTime(timeline);
         goldfishState.currentSegmentIndex++;
         goldfishState.segmentStartTime = Date.now();
         goldfishState.isPaused = false;
@@ -20,6 +29,7 @@ export function advanceSegment(timeline: Timeline): void {
 
 export function previousSegment(timeline: Timeline): void {
     if (goldfishState.currentSegmentIndex > 0) {
+        initSessionEndTime(timeline);
         goldfishState.currentSegmentIndex--;
         goldfishState.segmentStartTime = Date.now();
         goldfishState.isPaused = false;
@@ -28,15 +38,19 @@ export function previousSegment(timeline: Timeline): void {
     }
 }
 
-export function pauseResume(): void {
+export function pauseResume(timeline?: Timeline): void {
     if (goldfishState.isPaused) {
         if (!goldfishState.hasStarted) {
-            // First start: reset segment start time cleanly
+            // First start: reset segment start time and anchor session end time
             goldfishState.segmentStartTime = Date.now();
+            if (timeline) {
+                initSessionEndTime(timeline);
+            }
         } else {
-            // Resume: shift segmentStartTime forward by the paused duration to preserve elapsed time
+            // Resume: shift segmentStartTime and sessionEndTime forward by the paused duration
             const pauseDuration = Date.now() - (goldfishState.pausedAt ?? Date.now());
             goldfishState.segmentStartTime += pauseDuration;
+            goldfishState.sessionEndTime += pauseDuration;
         }
         goldfishState.isPaused = false;
         goldfishState.pausedAt = undefined;

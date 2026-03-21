@@ -20,6 +20,15 @@ export function getTotalRemainingSeconds(timeline: Timeline, state: AppState): n
     return currentRemaining + futureTotal;
 }
 
+export function getSessionActualRemaining(state: AppState): number {
+    const now = state.isPaused && state.pausedAt !== undefined ? state.pausedAt : Date.now();
+    return (state.sessionEndTime - now) / 1000;
+}
+
+export function getScheduleDrift(timeline: Timeline, state: AppState): number {
+    return getSessionActualRemaining(state) - getTotalRemainingSeconds(timeline, state);
+}
+
 export function formatTime(totalSeconds: number): string {
     const abs = Math.abs(Math.floor(totalSeconds));
     const h = Math.floor(abs / 3600);

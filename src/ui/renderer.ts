@@ -1,5 +1,5 @@
 import { Timeline, AppState } from '../models/types.js';
-import { getSecondsRemaining, getTotalRemainingSeconds, formatTime } from '../core/timer.js';
+import { getSecondsRemaining, getSessionActualRemaining, getScheduleDrift, formatTime } from '../core/timer.js';
 
 const elTitle = document.getElementById('segment-title')!;
 const elTimer = document.getElementById('timer')!;
@@ -11,6 +11,7 @@ const elPauseButton = document.getElementById('btn-pause');
 const elSegmentKicker = document.getElementById('segment-kicker')!;
 const elSegmentBadgeText = document.getElementById('segment-badge-text')!;
 const elTimerState = document.getElementById('timer-state')!;
+const elScheduleDrift = document.getElementById('schedule-drift')!;
 const elLeftPanel = document.querySelector('.panel-left') as HTMLElement | null;
 const elRightPanel = document.querySelector('.panel-right') as HTMLElement | null;
 
@@ -115,8 +116,30 @@ export function render(timeline: Timeline, state: AppState): void {
         elNextSegment.textContent = 'Last segment';
     }
 
-    // Total session remaining
-    elTotalRemaining.textContent = formatTime(getTotalRemainingSeconds(timeline, state));
+    // Total session remaining (clock-based once started, planned total before start)
+    const sessionRemaining = state.hasStarted
+        ? getSessionActualRemaining(state)
+        : timeline.segments.reduce((sum, seg) => sum + seg.duration, 0);
+    elTotalRemaining.textContent = formatTime(sessionRemaining);
+
+    // Schedule drift indicator
+    const DRIFT_CLASSES = ['drift-ahead', 'drift-behind', 'drift-on-schedule'] as const;
+    DRIFT_CLASSES.forEach(c => elScheduleDrift.classList.remove(c));
+    if (!state.hasStarted) {
+        elScheduleDrift.textContent = '';
+    } else {
+        const drift = getScheduleDrift(timeline, state);
+        if (drift > 30) {
+            elScheduleDrift.textContent = `${formatTime(drift)} ahead`;
+            elScheduleDrift.classList.add('drift-ahead');
+        } else if (drift < -30) {
+            elScheduleDrift.textContent = `${formatTime(-drift)} behind`;
+            elScheduleDrift.classList.add('drift-behind');
+        } else {
+            elScheduleDrift.textContent = 'On schedule';
+            elScheduleDrift.classList.add('drift-on-schedule');
+        }
+    }
 
     // Info panel is always visible
     elInfoPanel.innerHTML = '';

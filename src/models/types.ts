@@ -21,4 +21,5 @@ export interface AppState {
     isPaused: boolean;
     pausedAt?: number; // Date.now() when paused
     hasStarted: boolean; // true once the user starts the timer for the first time
+    sessionEndTime: number; // fixed wall-clock endpoint (shifts forward on pause/resume)
 }

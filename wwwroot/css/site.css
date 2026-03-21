@@ -286,6 +286,28 @@ body.paused #timer {
     align-items: flex-start;
 }
 
+.meta-drift {
+    display: block;
+    margin-top: 0.35rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    min-height: 1.2em;
+}
+
+.drift-ahead {
+    color: #22C55E;
+}
+
+.drift-behind {
+    color: #ea7861;
+}
+
+.drift-on-schedule {
+    color: var(--text-muted, rgba(255, 255, 255, 0.46));
+}
+
 .controls-row {
     display: flex;
     align-items: center;

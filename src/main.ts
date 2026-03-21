@@ -38,7 +38,7 @@ async function init(): Promise<void> {
         switch (e.code) {
             case 'Space':
                 e.preventDefault();
-                pauseResume();
+                pauseResume(timeline);
                 break;
             case 'ArrowRight':
                 e.preventDefault();
@@ -67,7 +67,7 @@ async function init(): Promise<void> {
     });
 
     btnPause?.addEventListener('click', () => {
-        pauseResume();
+        pauseResume(timeline);
     });
 
     btnNext?.addEventListener('click', () => {
