@@ -619,6 +619,8 @@ body.type-break   #segment-title { color: #d9d5cf; }
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent-strong);
+    line-height: 1.4;
+    min-height: calc(0.82rem * 1.4);
 }
 
 .course-title {
@@ -627,12 +629,54 @@ body.type-break   #segment-title { color: #d9d5cf; }
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.25;
+    min-height: calc(2 * 1.25em);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
 }
 
 .course-meta {
     font-size: 0.88rem;
     color: var(--text-secondary);
     font-weight: 500;
+    line-height: 1.4;
+    min-height: calc(0.88rem * 1.4);
+}
+
+/* ── Skeleton Loading Cards ── */
+
+.course-card-skeleton {
+    pointer-events: none;
+}
+
+.skeleton-line {
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-code {
+    width: 4.5rem;
+    min-height: calc(0.82rem * 1.4);
+    animation-delay: 0s;
+}
+
+.skeleton-title {
+    width: 80%;
+    min-height: calc(1.45rem * 1.25 * 2);
+    animation-delay: 0.12s;
+}
+
+.skeleton-meta {
+    width: 60%;
+    min-height: calc(0.88rem * 1.4);
+    animation-delay: 0.24s;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
 }
 
 @media (max-width: 1000px) {

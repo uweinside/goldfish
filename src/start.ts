@@ -33,6 +33,8 @@ function renderCourseGrid(): void {
     const grid = document.getElementById('course-grid');
     if (!grid) return;
 
+    grid.innerHTML = '';
+
     for (const course of courses) {
         const { id, data } = course;
         const title = data.title ?? id.toUpperCase();
