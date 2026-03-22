@@ -22,6 +22,9 @@
     --track: rgba(255, 255, 255, 0.08);
     --border: rgba(255, 255, 255, 0.08);
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --scrollbar-track: rgba(255, 255, 255, 0.04);
+    --scrollbar-thumb: rgba(245, 245, 245, 0.2);
+    --scrollbar-thumb-hover: rgba(245, 245, 245, 0.34);
 }
 
 html, body {
@@ -69,9 +72,57 @@ body {
 }
 
 .panel-right {
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-right-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.7rem;
+    margin-right: -0.2rem;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.panel-right-scroll,
+.panel-right-scroll * {
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.panel-right-scroll::-webkit-scrollbar,
+.panel-right-scroll *::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+
+.panel-right-scroll::-webkit-scrollbar-track,
+.panel-right-scroll *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 999px;
+}
+
+.panel-right-scroll::-webkit-scrollbar-thumb,
+.panel-right-scroll *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.panel-right-scroll::-webkit-scrollbar-thumb:hover,
+.panel-right-scroll *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.panel-right-scroll::-webkit-scrollbar-corner,
+.panel-right-scroll *::-webkit-scrollbar-corner {
+    background: transparent;
 }
 
 @keyframes panelCrossfade {
