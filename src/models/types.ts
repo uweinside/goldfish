@@ -1,6 +1,7 @@
 export interface InfoSection {
     label: string;
     items: string[];
+    notes?: string[];
 }
 
 export interface Segment {
@@ -8,6 +9,7 @@ export interface Segment {
     duration: number; // seconds
     type?: 'lecture' | 'demo' | 'break';
     info?: InfoSection[];
+    notes?: string;
 }
 
 export interface Timeline {
@@ -22,4 +24,6 @@ export interface AppState {
     pausedAt?: number; // Date.now() when paused
     hasStarted: boolean; // true once the user starts the timer for the first time
     sessionEndTime: number; // fixed wall-clock endpoint (shifts forward on pause/resume)
+    rightPanelMode: 'info' | 'notes';
+    notesSectionIndex?: number;
 }

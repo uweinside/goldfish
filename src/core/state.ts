@@ -7,6 +7,8 @@ export const goldfishState: AppState = {
     pausedAt: Date.now(),
     hasStarted: false,
     sessionEndTime: 0,
+    rightPanelMode: 'info',
+    notesSectionIndex: undefined,
 };
 
 function initSessionEndTime(timeline: Timeline): void {
@@ -24,6 +26,8 @@ export function advanceSegment(timeline: Timeline): void {
         goldfishState.isPaused = false;
         goldfishState.pausedAt = undefined;
         goldfishState.hasStarted = true;
+        goldfishState.rightPanelMode = 'info';
+        goldfishState.notesSectionIndex = undefined;
     }
 }
 
@@ -35,7 +39,19 @@ export function previousSegment(timeline: Timeline): void {
         goldfishState.isPaused = false;
         goldfishState.pausedAt = undefined;
         goldfishState.hasStarted = true;
+        goldfishState.rightPanelMode = 'info';
+        goldfishState.notesSectionIndex = undefined;
     }
+}
+
+export function openNotesPanel(sectionIndex?: number): void {
+    goldfishState.rightPanelMode = 'notes';
+    goldfishState.notesSectionIndex = sectionIndex;
+}
+
+export function closeNotesPanel(): void {
+    goldfishState.rightPanelMode = 'info';
+    goldfishState.notesSectionIndex = undefined;
 }
 
 export function pauseResume(timeline?: Timeline): void {

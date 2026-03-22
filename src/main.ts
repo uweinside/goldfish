@@ -1,4 +1,4 @@
-import { goldfishState, advanceSegment, previousSegment, pauseResume } from './core/state.js';
+import { goldfishState, advanceSegment, previousSegment, pauseResume, openNotesPanel, closeNotesPanel } from './core/state.js';
 import { render } from './ui/renderer.js';
 import { loadCourse } from './core/data-loader.js';
 import { Timeline } from './models/types.js';
@@ -39,6 +39,12 @@ async function init(): Promise<void> {
             case 'ArrowLeft':
                 e.preventDefault();
                 previousSegment(timeline);
+                break;
+            case 'Escape':
+                if (goldfishState.rightPanelMode === 'notes') {
+                    e.preventDefault();
+                    closeNotesPanel();
+                }
                 break;
         }
     });
@@ -86,6 +92,70 @@ async function init(): Promise<void> {
     exitModal?.addEventListener('click', (e) => {
         if (e.target === exitModal) {
             exitModal.setAttribute('hidden', '');
+        }
+    });
+
+    const rightPanel = document.querySelector('.panel-right');
+    rightPanel?.addEventListener('click', (e) => {
+        const target = e.target instanceof Element ? e.target : null;
+        if (!target) {
+            return;
+        }
+
+        const notesBack = target.closest('#notes-back');
+        if (notesBack) {
+            closeNotesPanel();
+            return;
+        }
+
+        const notesSection = target.closest('.info-section-notes-enabled') as HTMLElement | null;
+        if (notesSection) {
+            const sectionIndex = Number(notesSection.dataset.notesSectionIndex);
+            if (!Number.isNaN(sectionIndex)) {
+                openNotesPanel(sectionIndex);
+                return;
+            }
+        }
+
+        if (goldfishState.rightPanelMode === 'notes') {
+            return;
+        }
+
+        const segment = timeline.segments[goldfishState.currentSegmentIndex];
+        const firstSectionWithNotes = segment.info?.findIndex(section =>
+            Array.isArray(section.notes) && section.notes.some(block => typeof block === 'string' && block.trim().length > 0),
+        ) ?? -1;
+
+        if (firstSectionWithNotes >= 0) {
+            openNotesPanel(firstSectionWithNotes);
+            return;
+        }
+
+        if (typeof segment.notes === 'string' && segment.notes.trim().length > 0) {
+            openNotesPanel();
+        }
+    });
+
+    rightPanel?.addEventListener('keydown', (e) => {
+        const keyboardEvent = e as KeyboardEvent;
+        if (keyboardEvent.key !== 'Enter' && keyboardEvent.key !== ' ') {
+            return;
+        }
+
+        const target = e.target instanceof Element ? e.target : null;
+        if (!target) {
+            return;
+        }
+
+        const notesSection = target.closest('.info-section-notes-enabled') as HTMLElement | null;
+        if (!notesSection) {
+            return;
+        }
+
+        const sectionIndex = Number(notesSection.dataset.notesSectionIndex);
+        if (!Number.isNaN(sectionIndex)) {
+            keyboardEvent.preventDefault();
+            openNotesPanel(sectionIndex);
         }
     });
 

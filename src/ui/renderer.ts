@@ -18,6 +18,7 @@ const elRightPanel = document.querySelector('.panel-right') as HTMLElement | nul
 const STATE_CLASSES = ['state-ok', 'state-warn', 'state-over'] as const;
 const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'] as const;
 let lastRenderedSegmentIndex = -1;
+let lastRightPanelRenderKey = '';
 
 const SECTION_COLORS: Record<string, string> = {
     focus: '#60A5FA',
@@ -34,6 +35,197 @@ function getSectionColor(label: string): string {
         if (lower.includes(keyword)) return color;
     }
     return '#6B7280';
+}
+
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatInlineMarkdown(text: string): string {
+    let output = escapeHtml(text);
+
+    output = output.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    output = output.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    output = output.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+    return output;
+}
+
+function renderNotesMarkdown(markdown: string): string {
+    const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+    const htmlParts: string[] = [];
+    let inUnorderedList = false;
+    let inOrderedList = false;
+    let inCodeBlock = false;
+    let codeBlockLines: string[] = [];
+
+    const closeLists = (): void => {
+        if (inUnorderedList) {
+            htmlParts.push('</ul>');
+            inUnorderedList = false;
+        }
+        if (inOrderedList) {
+            htmlParts.push('</ol>');
+            inOrderedList = false;
+        }
+    };
+
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
+
+        if (line.startsWith('```')) {
+            if (!inCodeBlock) {
+                closeLists();
+                inCodeBlock = true;
+                codeBlockLines = [];
+            } else {
+                htmlParts.push(`<pre><code>${escapeHtml(codeBlockLines.join('\n'))}</code></pre>`);
+                inCodeBlock = false;
+                codeBlockLines = [];
+            }
+            continue;
+        }
+
+        if (inCodeBlock) {
+            codeBlockLines.push(rawLine);
+            continue;
+        }
+
+        if (!line) {
+            closeLists();
+            continue;
+        }
+
+        const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+        if (headingMatch) {
+            closeLists();
+            const level = Math.min(headingMatch[1].length + 1, 4);
+            htmlParts.push(`<h${level}>${formatInlineMarkdown(headingMatch[2])}</h${level}>`);
+            continue;
+        }
+
+        const orderedMatch = line.match(/^\d+\.\s+(.+)$/);
+        if (orderedMatch) {
+            if (inUnorderedList) {
+                htmlParts.push('</ul>');
+                inUnorderedList = false;
+            }
+            if (!inOrderedList) {
+                htmlParts.push('<ol>');
+                inOrderedList = true;
+            }
+            htmlParts.push(`<li>${formatInlineMarkdown(orderedMatch[1])}</li>`);
+            continue;
+        }
+
+        const unorderedMatch = line.match(/^[-*]\s+(.+)$/);
+        if (unorderedMatch) {
+            if (inOrderedList) {
+                htmlParts.push('</ol>');
+                inOrderedList = false;
+            }
+            if (!inUnorderedList) {
+                htmlParts.push('<ul>');
+                inUnorderedList = true;
+            }
+            htmlParts.push(`<li>${formatInlineMarkdown(unorderedMatch[1])}</li>`);
+            continue;
+        }
+
+        closeLists();
+        htmlParts.push(`<p>${formatInlineMarkdown(line)}</p>`);
+    }
+
+    closeLists();
+    if (inCodeBlock) {
+        htmlParts.push(`<pre><code>${escapeHtml(codeBlockLines.join('\n'))}</code></pre>`);
+    }
+    return htmlParts.join('');
+}
+
+function hasSectionNotes(segment: Timeline['segments'][number], sectionIndex: number): boolean {
+    const notes = segment.info?.[sectionIndex]?.notes;
+    return Array.isArray(notes) && notes.some(block => typeof block === 'string' && block.trim().length > 0);
+}
+
+function renderInfoPanel(segment: Timeline['segments'][number]): void {
+    elInfoPanel.innerHTML = '';
+    if (!segment.info || segment.info.length === 0) {
+        return;
+    }
+
+    for (let i = 0; i < segment.info.length; i++) {
+        const section = segment.info[i];
+        const sectionEl = document.createElement('div');
+        const priority = i === 0 ? 'info-section-primary' : i === 1 ? 'info-section-secondary' : 'info-section-tertiary';
+        sectionEl.className = `info-section ${priority}`;
+        sectionEl.style.setProperty('--section-accent', getSectionColor(section.label));
+
+        const sectionHasNotes = hasSectionNotes(segment, i);
+        if (sectionHasNotes) {
+            sectionEl.classList.add('info-section-notes-enabled');
+            sectionEl.dataset.notesSectionIndex = String(i);
+            sectionEl.setAttribute('role', 'button');
+            sectionEl.setAttribute('tabindex', '0');
+        }
+
+        const labelRow = document.createElement('div');
+        labelRow.className = 'info-label-row';
+
+        const labelEl = document.createElement('h3');
+        labelEl.className = 'info-label';
+        labelEl.textContent = section.label;
+        labelRow.appendChild(labelEl);
+
+        if (sectionHasNotes) {
+            const notesMarker = document.createElement('span');
+            notesMarker.className = 'notes-marker';
+            notesMarker.setAttribute('aria-hidden', 'true');
+            notesMarker.textContent = 'N';
+            labelRow.appendChild(notesMarker);
+        }
+
+        sectionEl.appendChild(labelRow);
+
+        const listEl = document.createElement('ul');
+        listEl.className = 'info-items';
+        for (const item of section.items) {
+            const li = document.createElement('li');
+            li.textContent = item;
+            listEl.appendChild(li);
+        }
+        sectionEl.appendChild(listEl);
+        elInfoPanel.appendChild(sectionEl);
+    }
+}
+
+function renderNotesPanel(segmentTitle: string, notesTitle: string, notesBlocks: string[]): void {
+    const safeSegmentTitle = escapeHtml(segmentTitle);
+    const safeNotesTitle = escapeHtml(notesTitle);
+    const renderedBlocks = notesBlocks
+        .filter(block => typeof block === 'string' && block.trim().length > 0)
+        .map(block => `<section class="notes-block">${renderNotesMarkdown(block.trim())}</section>`)
+        .join('');
+
+    elInfoPanel.innerHTML = `
+        <div class="notes-view" aria-live="polite">
+            <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to section information">
+                <span aria-hidden="true">&larr;</span>
+                <span>Back</span>
+            </button>
+            <div class="notes-header">
+                <p class="notes-kicker">Segment Notes</p>
+                <h3>${safeSegmentTitle}</h3>
+                <p class="notes-subtitle">${safeNotesTitle}</p>
+            </div>
+            <div class="notes-content">${renderedBlocks}</div>
+        </div>
+    `;
 }
 
 export function render(timeline: Timeline, state: AppState): void {
@@ -141,30 +333,42 @@ export function render(timeline: Timeline, state: AppState): void {
         }
     }
 
-    // Info panel is always visible
-    elInfoPanel.innerHTML = '';
-    if (segment.info && segment.info.length > 0) {
-        for (let i = 0; i < segment.info.length; i++) {
-            const section = segment.info[i];
-            const sectionEl = document.createElement('div');
-            const priority = i === 0 ? 'info-section-primary' : i === 1 ? 'info-section-secondary' : 'info-section-tertiary';
-            sectionEl.className = `info-section ${priority}`;
-            sectionEl.style.setProperty('--section-accent', getSectionColor(section.label));
+    // Right panel: info view or notes view
+    const sectionWithNotesIndex = segment.info?.findIndex((_section, index) => hasSectionNotes(segment, index)) ?? -1;
+    const hasSectionNotesAvailable = sectionWithNotesIndex >= 0;
+    const hasSegmentNotes = typeof segment.notes === 'string' && segment.notes.trim().length > 0;
+    const hasNotes = hasSectionNotesAvailable || hasSegmentNotes;
+    elRightPanel?.classList.toggle('panel-notes-available', hasNotes);
+    elRightPanel?.classList.toggle('panel-notes-open', hasNotes && state.rightPanelMode === 'notes');
 
-            const labelEl = document.createElement('h3');
-            labelEl.className = 'info-label';
-            labelEl.textContent = section.label;
-            sectionEl.appendChild(labelEl);
+    const rightPanelRenderKey = [
+        state.currentSegmentIndex,
+        state.rightPanelMode,
+        state.notesSectionIndex ?? -1,
+        hasNotes ? 'has-notes' : 'no-notes',
+    ].join('|');
 
-            const listEl = document.createElement('ul');
-            listEl.className = 'info-items';
-            for (const item of section.items) {
-                const li = document.createElement('li');
-                li.textContent = item;
-                listEl.appendChild(li);
+    if (rightPanelRenderKey !== lastRightPanelRenderKey) {
+        if (hasNotes && state.rightPanelMode === 'notes') {
+            const selectedIndex = state.notesSectionIndex;
+            const selectedSection = selectedIndex !== undefined ? segment.info?.[selectedIndex] : undefined;
+            const selectedSectionNotes = selectedSection?.notes?.filter(block => block.trim().length > 0) ?? [];
+
+            if (selectedSection && selectedSectionNotes.length > 0) {
+                renderNotesPanel(segment.title, selectedSection.label, selectedSectionNotes);
+            } else if (hasSegmentNotes) {
+                renderNotesPanel(segment.title, 'General', [segment.notes!.trim()]);
+            } else if (hasSectionNotesAvailable) {
+                const fallbackSection = segment.info![sectionWithNotesIndex];
+                const fallbackNotes = fallbackSection.notes!.filter(block => block.trim().length > 0);
+                renderNotesPanel(segment.title, fallbackSection.label, fallbackNotes);
+            } else {
+                renderInfoPanel(segment);
             }
-            sectionEl.appendChild(listEl);
-            elInfoPanel.appendChild(sectionEl);
+        } else {
+            renderInfoPanel(segment);
         }
+
+        lastRightPanelRenderKey = rightPanelRenderKey;
     }
 }
