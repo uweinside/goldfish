@@ -2,34 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Tauri (Rust)",
-      "type": "lldb",
-      "request": "launch",
-      "program": "${workspaceFolder}/src-tauri/target/debug/cuepilot.exe",
-      "args": [],
-      "cwd": "${workspaceFolder}/src-tauri",
-      "preLaunchTask": "cargo: build debug",
-      "env": {
-        "RUST_LOG": "debug",
-        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS": "--remote-debugging-port=9222"
-      },
-      "sourceLanguages": ["rust"]
-    },
-    {
       "name": "Debug Tauri (WebView)",
       "type": "msedge",
       "request": "attach",
       "port": 9222,
-      "webRoot": "${workspaceFolder}/src",
-      "preLaunchTask": "tauri: dev"
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Debug Tauri (Full Stack)",
-      "configurations": ["Debug Tauri (Rust)", "Debug Tauri (WebView)"],
-      "stopAll": true,
-      "preLaunchTask": "vite: dev server"
+      "webRoot": "${workspaceFolder}/src"
     }
   ]
 }
