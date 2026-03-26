@@ -1,4 +1,4 @@
-import { goldfishState, advanceSegment, previousSegment, pauseResume, openNotesPanel, closeNotesPanel } from './core/state.js';
+import { goldfishState, advanceSegment, previousSegment, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection } from './core/state.js';
 import { render } from './ui/renderer.js';
 import { loadCourse } from './core/data-loader.js';
 import { Timeline } from './models/types.js';
@@ -105,6 +105,18 @@ async function init(): Promise<void> {
         const notesBack = target.closest('#notes-back');
         if (notesBack) {
             closeNotesPanel();
+            return;
+        }
+
+        const notesPrev = target.closest('#notes-prev');
+        if (notesPrev) {
+            previousNotesSection(timeline);
+            return;
+        }
+
+        const notesNext = target.closest('#notes-next');
+        if (notesNext) {
+            advanceNotesSection(timeline);
             return;
         }
 

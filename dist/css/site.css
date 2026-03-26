@@ -22,6 +22,9 @@
     --track: rgba(255, 255, 255, 0.08);
     --border: rgba(255, 255, 255, 0.08);
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --scrollbar-track: rgba(255, 255, 255, 0.04);
+    --scrollbar-thumb: rgba(245, 245, 245, 0.2);
+    --scrollbar-thumb-hover: rgba(245, 245, 245, 0.34);
 }
 
 html, body {
@@ -69,9 +72,57 @@ body {
 }
 
 .panel-right {
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-right-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.7rem;
+    margin-right: -0.2rem;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.panel-right-scroll,
+.panel-right-scroll * {
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.panel-right-scroll::-webkit-scrollbar,
+.panel-right-scroll *::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+
+.panel-right-scroll::-webkit-scrollbar-track,
+.panel-right-scroll *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 999px;
+}
+
+.panel-right-scroll::-webkit-scrollbar-thumb,
+.panel-right-scroll *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.panel-right-scroll::-webkit-scrollbar-thumb:hover,
+.panel-right-scroll *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.panel-right-scroll::-webkit-scrollbar-corner,
+.panel-right-scroll *::-webkit-scrollbar-corner {
+    background: transparent;
 }
 
 @keyframes panelCrossfade {
@@ -506,11 +557,20 @@ body.paused #timer {
     min-height: 100%;
 }
 
-.notes-back-btn {
-    align-self: flex-start;
+.notes-top-row {
     position: sticky;
     top: 0;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.25rem;
+    backdrop-filter: blur(4px);
+    background: rgba(5, 5, 5, 0.65);
+}
+
+.notes-back-btn {
     border: 1px solid rgba(251, 191, 36, 0.45);
     border-radius: 999px;
     background: rgba(5, 5, 5, 0.84);
@@ -534,6 +594,45 @@ body.paused #timer {
 .notes-back-btn:focus-visible {
     outline: 3px solid rgba(255, 255, 255, 0.72);
     outline-offset: 2px;
+}
+
+.notes-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.notes-nav-btn {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.5rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.notes-nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.32);
+    color: var(--text-main);
+}
+
+.notes-nav-btn:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.72);
+    outline-offset: 2px;
+}
+
+.notes-nav-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
 }
 
 .notes-header h3 {
