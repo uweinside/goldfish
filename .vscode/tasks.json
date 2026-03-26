@@ -8,7 +8,7 @@
       "args": ["run", "tauri:dev"],
       "options": {
         "env": {
-          "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}",
+          "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:PATH}",
           "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS": "--remote-debugging-port=9222"
         }
       },
@@ -37,7 +37,7 @@
       "args": ["run", "tauri:build"],
       "options": {
         "env": {
-          "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}"
+          "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:PATH}"
         }
       },
       "group": {
