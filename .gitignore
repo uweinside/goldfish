@@ -9,6 +9,11 @@ target/
 src-tauri/target/
 src-tauri/gen/
 
+# .NET build output
+bin/
+obj/
+artifacts/
+
 # Environment files
 .env
 .env.*
