@@ -7,6 +7,7 @@ const elProgressFill = document.getElementById('progress-bar-fill')!;
 const elNextSegment = document.getElementById('next-segment')!;
 const elTotalRemaining = document.getElementById('total-remaining')!;
 const elInfoPanel = document.getElementById('info-panel')!;
+const elPanelRightHeader = document.getElementById('panel-right-header')!;
 const elPauseButton = document.getElementById('btn-pause');
 const elSegmentKicker = document.getElementById('segment-kicker')!;
 const elSegmentBadgeText = document.getElementById('segment-badge-text')!;
@@ -155,6 +156,7 @@ function hasSectionNotes(segment: Timeline['segments'][number], sectionIndex: nu
 
 function renderInfoPanel(segment: Timeline['segments'][number], hasNotes: boolean): void {
     elInfoPanel.innerHTML = '';
+    elPanelRightHeader.innerHTML = '';
 
     const topRow = document.createElement('div');
     topRow.className = 'notes-top-row';
@@ -171,7 +173,7 @@ function renderInfoPanel(segment: Timeline['segments'][number], hasNotes: boolea
         switchBtn.innerHTML = '<span>Transcript</span><span aria-hidden="true">&rarr;</span>';
         topRow.appendChild(switchBtn);
     }
-    elInfoPanel.appendChild(topRow);
+    elPanelRightHeader.appendChild(topRow);
 
     if (!segment.info || segment.info.length === 0) {
         return;
@@ -250,18 +252,20 @@ function renderNotesPanel(segmentTitle: string, notesTitle: string, notesBlocks:
         .map(block => `<section class="notes-block">${renderNotesMarkdown(block.trim())}</section>`)
         .join('');
 
+    elPanelRightHeader.innerHTML = `
+        <div class="notes-top-row">
+            <span class="notes-mode-label">Transcript View</span>
+            <div class="notes-top-row-actions">
+                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
+                    <span aria-hidden="true">&larr;</span>
+                    <span>Outline</span>
+                </button>
+                ${renderNotesNav(nav)}
+            </div>
+        </div>
+    `;
     elInfoPanel.innerHTML = `
         <div class="notes-view" aria-live="polite">
-            <div class="notes-top-row">
-                <span class="notes-mode-label">Transcript View</span>
-                <div class="notes-top-row-actions">
-                    <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
-                        <span aria-hidden="true">&larr;</span>
-                        <span>Outline</span>
-                    </button>
-                    ${renderNotesNav(nav)}
-                </div>
-            </div>
             <div class="notes-header">
                 <p class="notes-kicker">Transcript</p>
                 <h3>${safeSegmentTitle}</h3>
@@ -277,18 +281,20 @@ function renderNotesPanelItems(segmentTitle: string, sectionLabel: string, items
     const safeSectionLabel = escapeHtml(sectionLabel);
     const listItems = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
 
+    elPanelRightHeader.innerHTML = `
+        <div class="notes-top-row">
+            <span class="notes-mode-label">Transcript View</span>
+            <div class="notes-top-row-actions">
+                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
+                    <span aria-hidden="true">&larr;</span>
+                    <span>Outline</span>
+                </button>
+                ${renderNotesNav(nav)}
+            </div>
+        </div>
+    `;
     elInfoPanel.innerHTML = `
         <div class="notes-view" aria-live="polite">
-            <div class="notes-top-row">
-                <span class="notes-mode-label">Transcript View</span>
-                <div class="notes-top-row-actions">
-                    <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
-                        <span aria-hidden="true">&larr;</span>
-                        <span>Outline</span>
-                    </button>
-                    ${renderNotesNav(nav)}
-                </div>
-            </div>
             <div class="notes-header">
                 <p class="notes-kicker">Segment Info</p>
                 <h3>${safeSegmentTitle}</h3>
