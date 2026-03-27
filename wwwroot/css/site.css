@@ -608,10 +608,10 @@ body.paused #timer {
 }
 
 .outline-view-transcript-btn {
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    border: 1px solid rgba(251, 191, 36, 0.45);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-secondary);
+    background: rgba(5, 5, 5, 0.84);
+    color: #FBBF24;
     font: inherit;
     font-size: 0.9rem;
     font-weight: 700;
@@ -622,13 +622,10 @@ body.paused #timer {
     gap: 0.45rem;
     cursor: pointer;
     backdrop-filter: blur(4px);
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .outline-view-transcript-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.38);
-    color: var(--text-main);
+    background: rgba(20, 20, 20, 0.9);
 }
 
 .outline-view-transcript-btn:focus-visible {
