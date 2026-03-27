@@ -253,12 +253,14 @@ function renderNotesPanel(segmentTitle: string, notesTitle: string, notesBlocks:
     elInfoPanel.innerHTML = `
         <div class="notes-view" aria-live="polite">
             <div class="notes-top-row">
-                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
-                    <span aria-hidden="true">&larr;</span>
-                    <span>Outline</span>
-                </button>
                 <span class="notes-mode-label">Transcript View</span>
-                ${renderNotesNav(nav)}
+                <div class="notes-top-row-actions">
+                    <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
+                        <span aria-hidden="true">&larr;</span>
+                        <span>Outline</span>
+                    </button>
+                    ${renderNotesNav(nav)}
+                </div>
             </div>
             <div class="notes-header">
                 <p class="notes-kicker">Transcript</p>
@@ -278,12 +280,14 @@ function renderNotesPanelItems(segmentTitle: string, sectionLabel: string, items
     elInfoPanel.innerHTML = `
         <div class="notes-view" aria-live="polite">
             <div class="notes-top-row">
-                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
-                    <span aria-hidden="true">&larr;</span>
-                    <span>Outline</span>
-                </button>
                 <span class="notes-mode-label">Transcript View</span>
-                ${renderNotesNav(nav)}
+                <div class="notes-top-row-actions">
+                    <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
+                        <span aria-hidden="true">&larr;</span>
+                        <span>Outline</span>
+                    </button>
+                    ${renderNotesNav(nav)}
+                </div>
             </div>
             <div class="notes-header">
                 <p class="notes-kicker">Segment Info</p>

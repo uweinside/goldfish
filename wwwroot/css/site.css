@@ -566,6 +566,12 @@ body.paused #timer {
     background: transparent;
 }
 
+.notes-top-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
 .notes-mode-label {
     color: var(--text-secondary);
     font-size: 0.78rem;
