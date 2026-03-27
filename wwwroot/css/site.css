@@ -601,6 +601,35 @@ body.paused #timer {
     outline-offset: 2px;
 }
 
+.outline-view-transcript-btn {
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.55rem 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.outline-view-transcript-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.38);
+    color: var(--text-main);
+}
+
+.outline-view-transcript-btn:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.72);
+    outline-offset: 2px;
+}
+
 .notes-nav-row {
     display: flex;
     align-items: center;

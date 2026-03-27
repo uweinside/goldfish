@@ -129,13 +129,26 @@ async function init(): Promise<void> {
             }
         }
 
+        if (target.closest('#outline-view-transcript')) {
+            const seg = timeline.segments[goldfishState.currentSegmentIndex];
+            const firstIdx = seg.info?.findIndex(section =>
+                Array.isArray(section.transcript) && section.transcript.some(block => typeof block === 'string' && block.trim().length > 0),
+            ) ?? -1;
+            if (firstIdx >= 0) {
+                openNotesPanel(firstIdx);
+            } else {
+                openNotesPanel();
+            }
+            return;
+        }
+
         if (goldfishState.rightPanelMode === 'notes') {
             return;
         }
 
         const segment = timeline.segments[goldfishState.currentSegmentIndex];
         const firstSectionWithNotes = segment.info?.findIndex(section =>
-            Array.isArray(section.notes) && section.notes.some(block => typeof block === 'string' && block.trim().length > 0),
+            Array.isArray(section.transcript) && section.transcript.some(block => typeof block === 'string' && block.trim().length > 0),
         ) ?? -1;
 
         if (firstSectionWithNotes >= 0) {
@@ -143,7 +156,7 @@ async function init(): Promise<void> {
             return;
         }
 
-        if (typeof segment.notes === 'string' && segment.notes.trim().length > 0) {
+        if (typeof segment.transcript === 'string' && segment.transcript.trim().length > 0) {
             openNotesPanel();
         }
     });

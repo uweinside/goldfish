@@ -1,7 +1,7 @@
 export interface InfoSection {
     label: string;
     items: string[];
-    notes?: string[];
+    transcript?: string[];
 }
 
 export interface Segment {
@@ -9,7 +9,7 @@ export interface Segment {
     duration: number; // seconds
     type?: 'lecture' | 'demo' | 'break';
     info?: InfoSection[];
-    notes?: string;
+    transcript?: string;
 }
 
 export interface Timeline {

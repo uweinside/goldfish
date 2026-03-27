@@ -55,7 +55,7 @@ export function closeNotesPanel(): void {
 }
 
 function sectionHasNotes(segment: Timeline['segments'][number], index: number): boolean {
-    const notes = segment.info?.[index]?.notes;
+    const notes = segment.info?.[index]?.transcript;
     return Array.isArray(notes) && notes.some(b => typeof b === 'string' && b.trim().length > 0);
 }
 
@@ -77,7 +77,7 @@ export function advanceNotesSection(timeline: Timeline): void {
     for (let s = goldfishState.currentSegmentIndex + 1; s < timeline.segments.length; s++) {
         const nextSeg = timeline.segments[s];
         const firstWithNotes = nextSeg.info?.findIndex((_sec, idx) => sectionHasNotes(nextSeg, idx)) ?? -1;
-        const hasSegNotes = typeof nextSeg.notes === 'string' && nextSeg.notes.trim().length > 0;
+        const hasSegNotes = typeof nextSeg.transcript === 'string' && nextSeg.transcript.trim().length > 0;
 
         if (firstWithNotes >= 0 || hasSegNotes) {
             initSessionEndTime(timeline);
@@ -114,7 +114,7 @@ export function previousNotesSection(timeline: Timeline): void {
         for (let i = prevCount - 1; i >= 0; i--) {
             if (sectionHasNotes(prevSeg, i)) { lastWithNotes = i; break; }
         }
-        const hasSegNotes = typeof prevSeg.notes === 'string' && prevSeg.notes.trim().length > 0;
+        const hasSegNotes = typeof prevSeg.transcript === 'string' && prevSeg.transcript.trim().length > 0;
 
         if (lastWithNotes >= 0 || hasSegNotes) {
             initSessionEndTime(timeline);

@@ -149,12 +149,30 @@ function renderNotesMarkdown(markdown: string): string {
 }
 
 function hasSectionNotes(segment: Timeline['segments'][number], sectionIndex: number): boolean {
-    const notes = segment.info?.[sectionIndex]?.notes;
+    const notes = segment.info?.[sectionIndex]?.transcript;
     return Array.isArray(notes) && notes.some(block => typeof block === 'string' && block.trim().length > 0);
 }
 
-function renderInfoPanel(segment: Timeline['segments'][number]): void {
+function renderInfoPanel(segment: Timeline['segments'][number], hasNotes: boolean): void {
     elInfoPanel.innerHTML = '';
+
+    const topRow = document.createElement('div');
+    topRow.className = 'notes-top-row';
+    const modeLabel = document.createElement('span');
+    modeLabel.className = 'notes-mode-label';
+    modeLabel.textContent = 'Outline View';
+    topRow.appendChild(modeLabel);
+    if (hasNotes) {
+        const switchBtn = document.createElement('button');
+        switchBtn.id = 'outline-view-transcript';
+        switchBtn.className = 'outline-view-transcript-btn';
+        switchBtn.type = 'button';
+        switchBtn.setAttribute('aria-label', 'Switch to Transcript View');
+        switchBtn.innerHTML = '<span>Transcript</span><span aria-hidden="true">&rarr;</span>';
+        topRow.appendChild(switchBtn);
+    }
+    elInfoPanel.appendChild(topRow);
+
     if (!segment.info || segment.info.length === 0) {
         return;
     }
@@ -235,9 +253,9 @@ function renderNotesPanel(segmentTitle: string, notesTitle: string, notesBlocks:
     elInfoPanel.innerHTML = `
         <div class="notes-view" aria-live="polite">
             <div class="notes-top-row">
-                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to section information">
+                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
                     <span aria-hidden="true">&larr;</span>
-                    <span>Back</span>
+                    <span>Outline</span>
                 </button>
                 <span class="notes-mode-label">Transcript View</span>
                 ${renderNotesNav(nav)}
@@ -260,9 +278,9 @@ function renderNotesPanelItems(segmentTitle: string, sectionLabel: string, items
     elInfoPanel.innerHTML = `
         <div class="notes-view" aria-live="polite">
             <div class="notes-top-row">
-                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to section information">
+                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
                     <span aria-hidden="true">&larr;</span>
-                    <span>Back</span>
+                    <span>Outline</span>
                 </button>
                 <span class="notes-mode-label">Transcript View</span>
                 ${renderNotesNav(nav)}
@@ -387,7 +405,7 @@ export function render(timeline: Timeline, state: AppState): void {
     // Right panel: info view or notes view
     const sectionWithNotesIndex = segment.info?.findIndex((_section, index) => hasSectionNotes(segment, index)) ?? -1;
     const hasSectionNotesAvailable = sectionWithNotesIndex >= 0;
-    const hasSegmentNotes = typeof segment.notes === 'string' && segment.notes.trim().length > 0;
+    const hasSegmentNotes = typeof segment.transcript === 'string' && segment.transcript.trim().length > 0;
     const hasNotes = hasSectionNotesAvailable || hasSegmentNotes;
     elRightPanel?.classList.toggle('panel-notes-available', hasNotes || state.rightPanelMode === 'notes');
     elRightPanel?.classList.toggle('panel-notes-open', state.rightPanelMode === 'notes');
@@ -416,7 +434,7 @@ export function render(timeline: Timeline, state: AppState): void {
                 for (let s = state.currentSegmentIndex + 1; s < timeline.segments.length; s++) {
                     const seg = timeline.segments[s];
                     const secNotes = seg.info?.some((_sec, idx) => hasSectionNotes(seg, idx)) ?? false;
-                    const segNotes = typeof seg.notes === 'string' && seg.notes.trim().length > 0;
+                    const segNotes = typeof seg.transcript === 'string' && seg.transcript.trim().length > 0;
                     if (secNotes || segNotes) { hasNextNotes = true; break; }
                 }
             }
@@ -431,7 +449,7 @@ export function render(timeline: Timeline, state: AppState): void {
                 for (let s = state.currentSegmentIndex - 1; s >= 0; s--) {
                     const seg = timeline.segments[s];
                     const secNotes = seg.info?.some((_sec, idx) => hasSectionNotes(seg, idx)) ?? false;
-                    const segNotes = typeof seg.notes === 'string' && seg.notes.trim().length > 0;
+                    const segNotes = typeof seg.transcript === 'string' && seg.transcript.trim().length > 0;
                     if (secNotes || segNotes) { hasPrevNotes = true; break; }
                 }
             }
@@ -442,23 +460,23 @@ export function render(timeline: Timeline, state: AppState): void {
             const selectedSection = selectedIndex !== undefined ? segment.info?.[selectedIndex] : undefined;
 
             if (selectedSection) {
-                const sectionNotes = selectedSection.notes?.filter(block => block.trim().length > 0) ?? [];
+                const sectionNotes = selectedSection.transcript?.filter(block => block.trim().length > 0) ?? [];
                 if (sectionNotes.length > 0) {
                     renderNotesPanel(segment.title, selectedSection.label, sectionNotes, nav);
                 } else {
                     renderNotesPanel(segment.title, segment.title, ['No notes available for this section.'], nav);
                 }
             } else if (hasSegmentNotes) {
-                renderNotesPanel(segment.title, 'General', [segment.notes!.trim()], nav);
+                renderNotesPanel(segment.title, 'General', [segment.transcript!.trim()], nav);
             } else if (hasSectionNotesAvailable) {
                 const fallbackSection = segment.info![sectionWithNotesIndex];
-                const fallbackNotes = fallbackSection.notes!.filter(block => block.trim().length > 0);
+                const fallbackNotes = fallbackSection.transcript!.filter(block => block.trim().length > 0);
                 renderNotesPanel(segment.title, fallbackSection.label, fallbackNotes, nav);
             } else {
                 renderNotesPanel(segment.title, segment.title, ['No notes available for this segment.'], nav);
             }
         } else {
-            renderInfoPanel(segment);
+            renderInfoPanel(segment, hasNotes);
         }
 
         lastRightPanelRenderKey = rightPanelRenderKey;
