@@ -12,6 +12,8 @@ const elTotalDuration = document.getElementById('editor-total-duration') as HTML
 const elSegmentList = document.getElementById('editor-segment-list') as HTMLElement | null;
 const elInspector = document.getElementById('editor-inspector-content') as HTMLElement | null;
 const elRunLink = document.getElementById('editor-run-link') as HTMLAnchorElement | null;
+const elEditorContent = document.querySelector('.editor-content') as HTMLElement | null;
+const elEditorDivider = document.getElementById('editor-divider') as HTMLElement | null;
 
 const state: EditorViewState = {
     selectedSegmentIndex: 0,
@@ -19,6 +21,10 @@ const state: EditorViewState = {
 };
 
 const SEGMENT_TYPES: Array<NonNullable<Segment['type']>> = ['lecture', 'demo', 'break'];
+const MIN_EDITOR_LEFT_PERCENT = 28;
+const MAX_EDITOR_LEFT_PERCENT = 72;
+const DEFAULT_EDITOR_LEFT_PERCENT = 36;
+let editorLeftPercent = DEFAULT_EDITOR_LEFT_PERCENT;
 
 function getCourseId(): string | null {
     const params = new URLSearchParams(window.location.search);
@@ -69,6 +75,112 @@ function getSelectedSegment(): Segment | null {
         return null;
     }
     return timeline.segments[state.selectedSegmentIndex] ?? null;
+}
+
+function clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+}
+
+function setEditorSplit(leftPercent: number): void {
+    if (!elEditorContent) {
+        return;
+    }
+
+    editorLeftPercent = clamp(leftPercent, MIN_EDITOR_LEFT_PERCENT, MAX_EDITOR_LEFT_PERCENT);
+
+    if (window.innerWidth <= 980) {
+        elEditorContent.style.removeProperty('grid-template-columns');
+    } else {
+        elEditorContent.style.gridTemplateColumns = `minmax(260px, ${editorLeftPercent}%) 10px minmax(360px, ${100 - editorLeftPercent}%)`;
+    }
+
+    if (elEditorDivider) {
+        elEditorDivider.setAttribute('aria-valuenow', String(Math.round(editorLeftPercent)));
+    }
+}
+
+function setupEditorDivider(): void {
+    if (!elEditorDivider || !elEditorContent) {
+        return;
+    }
+
+    let isDragging = false;
+    let activePointerId: number | null = null;
+
+    const updateFromClientX = (clientX: number): void => {
+        const rect = elEditorContent.getBoundingClientRect();
+        if (rect.width <= 0) {
+            return;
+        }
+        const left = clientX - rect.left;
+        const percent = (left / rect.width) * 100;
+        setEditorSplit(percent);
+    };
+
+    const stopDrag = (): void => {
+        if (!isDragging) {
+            return;
+        }
+        isDragging = false;
+        activePointerId = null;
+        document.body.classList.remove('editor-resizing');
+    };
+
+    elEditorDivider.addEventListener('pointerdown', event => {
+        if (window.innerWidth <= 980) {
+            return;
+        }
+
+        isDragging = true;
+        activePointerId = event.pointerId;
+        elEditorDivider.setPointerCapture(event.pointerId);
+        document.body.classList.add('editor-resizing');
+        updateFromClientX(event.clientX);
+        event.preventDefault();
+    });
+
+    elEditorDivider.addEventListener('pointermove', event => {
+        if (!isDragging || activePointerId !== event.pointerId) {
+            return;
+        }
+        updateFromClientX(event.clientX);
+    });
+
+    elEditorDivider.addEventListener('pointerup', event => {
+        if (activePointerId === event.pointerId) {
+            stopDrag();
+        }
+    });
+
+    elEditorDivider.addEventListener('pointercancel', event => {
+        if (activePointerId === event.pointerId) {
+            stopDrag();
+        }
+    });
+
+    elEditorDivider.addEventListener('lostpointercapture', stopDrag);
+
+    elEditorDivider.addEventListener('keydown', event => {
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            setEditorSplit(editorLeftPercent - 2);
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            setEditorSplit(editorLeftPercent + 2);
+        } else if (event.key === 'Home') {
+            event.preventDefault();
+            setEditorSplit(MIN_EDITOR_LEFT_PERCENT);
+        } else if (event.key === 'End') {
+            event.preventDefault();
+            setEditorSplit(MAX_EDITOR_LEFT_PERCENT);
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        setEditorSplit(editorLeftPercent);
+    });
+
+    setEditorSplit(DEFAULT_EDITOR_LEFT_PERCENT);
 }
 
 function renderSegmentList(timeline: Timeline): void {
@@ -322,6 +434,8 @@ async function init(): Promise<void> {
     }
 
     state.timeline = timeline;
+
+    setupEditorDivider();
 
     elInspector?.addEventListener('input', handleInspectorInput);
     elInspector?.addEventListener('click', handleInspectorClick);
