@@ -1,3 +1,4 @@
+import Sortable from 'sortablejs';
 import { Chapter, Section, SectionType, Timeline } from './models/types.js';
 import { loadLocalCourse, saveCourseDocument } from './core/course-authoring-api.js';
 
@@ -26,10 +27,41 @@ const state: EditorViewState = {
     timeline: null,
 };
 
-let dragState: { sourceIndex: number; dragType: 'chapter' | 'section' | null } = {
-    sourceIndex: -1,
-    dragType: null,
-};
+let chapterSortable: Sortable | null = null;
+let sectionSortable: Sortable | null = null;
+
+function reorderList<T>(items: T[], fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) {
+        return;
+    }
+
+    const [moved] = items.splice(fromIndex, 1);
+    items.splice(toIndex, 0, moved);
+}
+
+function remapSelectedIndex(
+    selectedIndex: number | null,
+    fromIndex: number,
+    toIndex: number,
+): number | null {
+    if (selectedIndex === null) {
+        return null;
+    }
+
+    if (selectedIndex === fromIndex) {
+        return toIndex;
+    }
+
+    if (fromIndex < toIndex && selectedIndex > fromIndex && selectedIndex <= toIndex) {
+        return selectedIndex - 1;
+    }
+
+    if (fromIndex > toIndex && selectedIndex >= toIndex && selectedIndex < fromIndex) {
+        return selectedIndex + 1;
+    }
+
+    return selectedIndex;
+}
 
 const SECTION_TYPE_OPTIONS: SectionType[] = ['Narration', 'Demo', 'Prompt', 'Rule'];
 const DEFAULT_EDITOR_SPLITS = { split1: 33, split2: 33 };
@@ -247,7 +279,6 @@ function renderChapterList(timeline: Timeline): void {
         button.type = 'button';
         button.className = `editor-segment-card${index === state.selectedChapterIndex ? ' selected' : ''}`;
         button.dataset.chapterIndex = String(index);
-        button.draggable = true;
         button.innerHTML = `
             <span class="editor-segment-handle" aria-hidden="true">::</span>
             <span class="editor-segment-title">${escapeHtml(chapter.title)}</span>
@@ -257,50 +288,6 @@ function renderChapterList(timeline: Timeline): void {
         button.addEventListener('click', () => {
             state.selectedChapterIndex = index;
             state.selectedSectionIndex = null;
-            render(timeline);
-        });
-
-        button.addEventListener('dragstart', (e) => {
-            dragState = { sourceIndex: index, dragType: 'chapter' };
-            button.classList.add('dragging');
-            if (e.dataTransfer) {
-                e.dataTransfer.effectAllowed = 'move';
-            }
-        });
-
-        button.addEventListener('dragend', () => {
-            button.classList.remove('dragging');
-            dragState = { sourceIndex: -1, dragType: null };
-        });
-
-        button.addEventListener('dragover', (e) => {
-            if (dragState.dragType !== 'chapter' || dragState.sourceIndex === index) {
-                return;
-            }
-            e.preventDefault();
-            button.classList.add('drag-over');
-        });
-
-        button.addEventListener('dragleave', () => {
-            button.classList.remove('drag-over');
-        });
-
-        button.addEventListener('drop', (e) => {
-            e.preventDefault();
-            button.classList.remove('drag-over');
-            if (dragState.dragType !== 'chapter' || dragState.sourceIndex < 0 || dragState.sourceIndex === index) {
-                return;
-            }
-
-            const [removed] = timeline.chapters.splice(dragState.sourceIndex, 1);
-            const targetIndex = dragState.sourceIndex < index ? index - 1 : index;
-            timeline.chapters.splice(targetIndex, 0, removed);
-
-            if (state.selectedChapterIndex === dragState.sourceIndex) {
-                state.selectedChapterIndex = targetIndex;
-            }
-            state.selectedSectionIndex = null;
-            saveCourse();
             render(timeline);
         });
 
@@ -344,7 +331,6 @@ function renderSectionList(timeline: Timeline): void {
         card.type = 'button';
         card.className = `editor-info-card${index === state.selectedSectionIndex ? ' selected' : ''}`;
         card.dataset.sectionIndex = String(index);
-        card.draggable = true;
         card.innerHTML = `
             <span class="editor-info-handle" aria-hidden="true">::</span>
             <span class="editor-info-card-label">${escapeHtml(section.title)}</span>
@@ -354,49 +340,6 @@ function renderSectionList(timeline: Timeline): void {
 
         card.addEventListener('click', () => {
             state.selectedSectionIndex = index;
-            render(timeline);
-        });
-
-        card.addEventListener('dragstart', (e) => {
-            dragState = { sourceIndex: index, dragType: 'section' };
-            card.classList.add('dragging');
-            if (e.dataTransfer) {
-                e.dataTransfer.effectAllowed = 'move';
-            }
-        });
-
-        card.addEventListener('dragend', () => {
-            card.classList.remove('dragging');
-            dragState = { sourceIndex: -1, dragType: null };
-        });
-
-        card.addEventListener('dragover', (e) => {
-            if (dragState.dragType !== 'section' || dragState.sourceIndex === index) {
-                return;
-            }
-            e.preventDefault();
-            card.classList.add('drag-over');
-        });
-
-        card.addEventListener('dragleave', () => {
-            card.classList.remove('drag-over');
-        });
-
-        card.addEventListener('drop', (e) => {
-            e.preventDefault();
-            card.classList.remove('drag-over');
-            if (dragState.dragType !== 'section' || dragState.sourceIndex < 0 || dragState.sourceIndex === index) {
-                return;
-            }
-
-            const [removed] = chapter.sections.splice(dragState.sourceIndex, 1);
-            const targetIndex = dragState.sourceIndex < index ? index - 1 : index;
-            chapter.sections.splice(targetIndex, 0, removed);
-
-            if (state.selectedSectionIndex === dragState.sourceIndex) {
-                state.selectedSectionIndex = targetIndex;
-            }
-            saveCourse();
             render(timeline);
         });
 
@@ -422,6 +365,71 @@ function renderSectionList(timeline: Timeline): void {
 
         elSectionsList.appendChild(row);
     });
+}
+
+function setupSortables(timeline: Timeline): void {
+    chapterSortable?.destroy();
+    sectionSortable?.destroy();
+    chapterSortable = null;
+    sectionSortable = null;
+
+    if (elChapterList) {
+        chapterSortable = Sortable.create(elChapterList, {
+            animation: 140,
+            forceFallback: true,
+            fallbackOnBody: true,
+            fallbackTolerance: 3,
+            handle: '.editor-segment-card',
+            draggable: '.editor-card-row',
+            filter: '.editor-card-delete',
+            ghostClass: 'dragging',
+            chosenClass: 'drag-over',
+            onEnd: (evt: Sortable.SortableEvent) => {
+                if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) {
+                    return;
+                }
+
+                reorderList(timeline.chapters, evt.oldIndex, evt.newIndex);
+                state.selectedChapterIndex = remapSelectedIndex(
+                    state.selectedChapterIndex,
+                    evt.oldIndex,
+                    evt.newIndex,
+                ) ?? 0;
+                state.selectedSectionIndex = null;
+                saveCourse();
+                render(timeline);
+            },
+        });
+    }
+
+    const chapter = timeline.chapters[state.selectedChapterIndex];
+    if (elSectionsList && chapter && chapter.sections.length > 0) {
+        sectionSortable = Sortable.create(elSectionsList, {
+            animation: 140,
+            forceFallback: true,
+            fallbackOnBody: true,
+            fallbackTolerance: 3,
+            handle: '.editor-info-card',
+            draggable: '.editor-card-row',
+            filter: '.editor-card-delete',
+            ghostClass: 'dragging',
+            chosenClass: 'drag-over',
+            onEnd: (evt: Sortable.SortableEvent) => {
+                if (evt.oldIndex === undefined || evt.newIndex === undefined || evt.oldIndex === evt.newIndex) {
+                    return;
+                }
+
+                reorderList(chapter.sections, evt.oldIndex, evt.newIndex);
+                state.selectedSectionIndex = remapSelectedIndex(
+                    state.selectedSectionIndex,
+                    evt.oldIndex,
+                    evt.newIndex,
+                );
+                saveCourse();
+                render(timeline);
+            },
+        });
+    }
 }
 
 function renderSectionEditor(timeline: Timeline): void {
@@ -609,6 +617,7 @@ function render(timeline: Timeline): void {
 
     renderChapterList(timeline);
     renderSectionList(timeline);
+    setupSortables(timeline);
     renderSectionEditor(timeline);
 
     if (elAddSectionBtn) {

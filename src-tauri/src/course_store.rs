@@ -9,8 +9,22 @@ fn workspace_root() -> Result<PathBuf, String> {
   std::env::current_dir().map_err(|e| format!("failed to resolve workspace root: {e}"))
 }
 
-fn courses_dir() -> Result<PathBuf, String> {
+fn legacy_courses_dir() -> Result<PathBuf, String> {
   Ok(workspace_root()?.join(COURSES_DIR))
+}
+
+fn courses_dir() -> Result<PathBuf, String> {
+  let root = workspace_root()?;
+
+  // In `tauri dev`, cwd is typically `.../src-tauri` which is watch-scanned.
+  // Writing there causes app restarts on every autosave, so write to repo-root `courses/`.
+  if root.file_name() == Some(OsStr::new("src-tauri")) {
+    if let Some(parent) = root.parent() {
+      return Ok(parent.join(COURSES_DIR));
+    }
+  }
+
+  Ok(root.join(COURSES_DIR))
 }
 
 fn ensure_courses_dir() -> Result<PathBuf, String> {
@@ -57,28 +71,51 @@ pub fn course_file_path(course_id: &str) -> Result<PathBuf, String> {
 }
 
 pub fn list_course_ids() -> Result<Vec<String>, String> {
-  let dir = ensure_courses_dir()?;
-  let entries = fs::read_dir(dir).map_err(|e| format!("failed to list courses directory: {e}"))?;
+  let primary_dir = ensure_courses_dir()?;
+  let legacy_dir = legacy_courses_dir()?;
 
-  let mut ids: Vec<String> = entries
-    .filter_map(|entry| entry.ok())
-    .map(|entry| entry.path())
+  let mut candidates: Vec<PathBuf> = Vec::new();
+
+  let primary_entries =
+    fs::read_dir(&primary_dir).map_err(|e| format!("failed to list courses directory: {e}"))?;
+  for entry in primary_entries.filter_map(|entry| entry.ok()) {
+    candidates.push(entry.path());
+  }
+
+  if legacy_dir != primary_dir && legacy_dir.exists() {
+    let legacy_entries =
+      fs::read_dir(&legacy_dir).map_err(|e| format!("failed to list legacy courses directory: {e}"))?;
+    for entry in legacy_entries.filter_map(|entry| entry.ok()) {
+      candidates.push(entry.path());
+    }
+  }
+
+  let mut ids: Vec<String> = candidates
+    .into_iter()
     .filter(|path| path.extension() == Some(OsStr::new("json")))
     .filter_map(|path| path.file_stem().map(|stem| stem.to_string_lossy().to_string()))
     .filter_map(|id| sanitize_course_id(&id).ok())
     .collect();
 
   ids.sort();
+  ids.dedup();
   Ok(ids)
 }
 
 pub fn read_course_json(course_id: &str) -> Result<String, String> {
   let path = course_file_path(course_id)?;
-  if !path.exists() {
-    return Err(format!("course '{course_id}' was not found"));
+  if path.exists() {
+    return fs::read_to_string(&path)
+      .map_err(|e| format!("failed to read course file '{}': {e}", path.display()));
   }
 
-  fs::read_to_string(&path).map_err(|e| format!("failed to read course file '{}': {e}", path.display()))
+  let legacy_path = legacy_courses_dir()?.join(format!("{course_id}.json"));
+  if legacy_path.exists() {
+    return fs::read_to_string(&legacy_path)
+      .map_err(|e| format!("failed to read legacy course file '{}': {e}", legacy_path.display()));
+  }
+
+  Err(format!("course '{course_id}' was not found"))
 }
 
 pub fn write_course_json_atomic(course_id: &str, json: &str) -> Result<(PathBuf, usize), String> {
@@ -108,12 +145,26 @@ pub fn write_course_json_atomic(course_id: &str, json: &str) -> Result<(PathBuf,
 
 pub fn delete_course(course_id: &str) -> Result<bool, String> {
   let path = course_file_path(course_id)?;
-  if !path.exists() {
-    return Ok(false);
+  let legacy_path = legacy_courses_dir()?.join(format!("{course_id}.json"));
+  let mut deleted = false;
+
+  if path.exists() {
+    fs::remove_file(&path)
+      .map_err(|e| format!("failed to delete course file '{}': {e}", path.display()))?;
+    deleted = true;
   }
 
-  fs::remove_file(&path).map_err(|e| format!("failed to delete course file '{}': {e}", path.display()))?;
-  Ok(true)
+  if legacy_path != path && legacy_path.exists() {
+    fs::remove_file(&legacy_path).map_err(|e| {
+      format!(
+        "failed to delete legacy course file '{}': {e}",
+        legacy_path.display()
+      )
+    })?;
+    deleted = true;
+  }
+
+  Ok(deleted)
 }
 
 pub fn parse_timeline(json: &str) -> Result<Timeline, String> {
