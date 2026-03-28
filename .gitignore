@@ -50,3 +50,8 @@ _ReSharper*/
 !.vscode/tasks.json
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

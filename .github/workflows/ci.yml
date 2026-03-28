@@ -2,7 +2,14 @@ name: CI Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - dev
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - dev
 
 permissions:
   contents: read
