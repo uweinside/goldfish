@@ -8,6 +8,28 @@ Beads is issue tracking that lives in your repo, making it perfect for AI coding
 
 **Learn more:** [github.com/steveyegge/beads](https://github.com/steveyegge/beads)
 
+## Fresh Clone Setup
+
+The issue database is **not stored in git** (only config is committed). After cloning this repo on a new machine:
+
+1. Install `bd` and `dolt`:
+   ```powershell
+   # Windows — download binaries to ~/.local/bin
+   # bd: https://github.com/steveyegge/beads/releases
+   # dolt: https://github.com/dolthub/dolt/releases
+   # Or: npm install -g @beads/bd
+   ```
+2. Initialize a fresh local database:
+   ```bash
+   bd bootstrap
+   ```
+
+That's it — `bd list` will work and you'll start with a clean issue database local to your machine.
+
+> **Note:** Issues are not shared between machines unless you configure a Dolt remote (`bd dolt remote add origin <url>`).
+
+---
+
 ## Quick Start
 
 ### Essential Commands
