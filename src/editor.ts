@@ -3,6 +3,7 @@ import { InfoSection, Segment, Timeline } from './models/types.js';
 
 interface EditorViewState {
     selectedSegmentIndex: number;
+    selectedInfoSectionIndex: number | null;
     timeline: Timeline | null;
 }
 
@@ -10,21 +11,29 @@ const elCourseTitle = document.getElementById('editor-course-title') as HTMLElem
 const elTotalSegments = document.getElementById('editor-total-segments') as HTMLElement | null;
 const elTotalDuration = document.getElementById('editor-total-duration') as HTMLElement | null;
 const elSegmentList = document.getElementById('editor-segment-list') as HTMLElement | null;
-const elInspector = document.getElementById('editor-inspector-content') as HTMLElement | null;
+const elInfoSectionsList = document.getElementById('editor-info-sections') as HTMLElement | null;
+const elInfoEditor = document.getElementById('editor-info-editor-content') as HTMLElement | null;
 const elRunLink = document.getElementById('editor-run-link') as HTMLAnchorElement | null;
 const elEditorContent = document.querySelector('.editor-content') as HTMLElement | null;
-const elEditorDivider = document.getElementById('editor-divider') as HTMLElement | null;
+const elDivider1 = document.getElementById('editor-divider-1') as HTMLElement | null;
+const elDivider2 = document.getElementById('editor-divider-2') as HTMLElement | null;
+const elAddInfoBtn = document.getElementById('editor-add-info-btn') as HTMLButtonElement | null;
 
 const state: EditorViewState = {
     selectedSegmentIndex: 0,
+    selectedInfoSectionIndex: null,
     timeline: null,
 };
 
+let dragState: { sourceIndex: number; isDragging: boolean; dragType: 'segment' | 'info' } = {
+    sourceIndex: -1,
+    isDragging: false,
+    dragType: 'segment',
+};
+
 const SEGMENT_TYPES: Array<NonNullable<Segment['type']>> = ['lecture', 'demo', 'break'];
-const MIN_EDITOR_LEFT_PERCENT = 28;
-const MAX_EDITOR_LEFT_PERCENT = 72;
-const DEFAULT_EDITOR_LEFT_PERCENT = 36;
-let editorLeftPercent = DEFAULT_EDITOR_LEFT_PERCENT;
+const DEFAULT_EDITOR_SPLITS = { split1: 33, split2: 33 };
+let editorSplits = { ...DEFAULT_EDITOR_SPLITS };
 
 function getCourseId(): string | null {
     const params = new URLSearchParams(window.location.search);
@@ -77,44 +86,73 @@ function getSelectedSegment(): Segment | null {
     return timeline.segments[state.selectedSegmentIndex] ?? null;
 }
 
+function setSelectedInfoSection(index: number | null): void {
+    state.selectedInfoSectionIndex = index;
+}
+
 function clamp(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
 }
 
-function setEditorSplit(leftPercent: number): void {
+function setEditorSplits(split1: number, split2: number): void {
     if (!elEditorContent) {
         return;
     }
 
-    editorLeftPercent = clamp(leftPercent, MIN_EDITOR_LEFT_PERCENT, MAX_EDITOR_LEFT_PERCENT);
+    split1 = clamp(split1, 20, 50);
+    split2 = clamp(split2, 20, 50);
+
+    // Ensure total doesn't exceed reasonable bounds
+    if (split1 + split2 > 80) {
+        split2 = 80 - split1;
+    }
+
+    editorSplits = { split1, split2 };
+    const split3 = Math.max(20, 100 - split1 - split2 - 0.4);
 
     if (window.innerWidth <= 980) {
         elEditorContent.style.removeProperty('grid-template-columns');
     } else {
-        elEditorContent.style.gridTemplateColumns = `minmax(260px, ${editorLeftPercent}%) 2px minmax(360px, ${100 - editorLeftPercent}%)`;
+        elEditorContent.style.gridTemplateColumns = 
+            `minmax(260px, ${split1}fr) 2px minmax(260px, ${split2}fr) 2px minmax(260px, ${split3}fr)`;
     }
 
-    if (elEditorDivider) {
-        elEditorDivider.setAttribute('aria-valuenow', String(Math.round(editorLeftPercent)));
+    if (elDivider1) {
+        elDivider1.setAttribute('aria-valuenow', String(Math.round(split1)));
+    }
+    if (elDivider2) {
+        elDivider2.setAttribute('aria-valuenow', String(Math.round(split2)));
     }
 }
 
-function setupEditorDivider(): void {
-    if (!elEditorDivider || !elEditorContent) {
+function setupEditorDividers(): void {
+    if (!elDivider1 || !elDivider2 || !elEditorContent) {
         return;
     }
 
+    type DividerType = 'divider1' | 'divider2';
     let isDragging = false;
+    let activeDivider: DividerType | null = null;
     let activePointerId: number | null = null;
 
-    const updateFromClientX = (clientX: number): void => {
+    const updateFromClientX = (clientX: number, divider: DividerType): void => {
         const rect = elEditorContent.getBoundingClientRect();
         if (rect.width <= 0) {
             return;
         }
-        const left = clientX - rect.left;
-        const percent = (left / rect.width) * 100;
-        setEditorSplit(percent);
+
+        if (divider === 'divider1') {
+            const left = clientX - rect.left;
+            const percent = (left / rect.width) * 100;
+            setEditorSplits(percent, editorSplits.split2);
+        } else {
+            // For divider2, we need to account for divider1's position
+            const left = clientX - rect.left;
+            const leftAfterDiv1 = left - (editorSplits.split1 + 0.2); // Account for divider 1 width
+            const remainingWidth = rect.width - (editorSplits.split1 + 0.2);
+            const percent = remainingWidth > 0 ? (leftAfterDiv1 / remainingWidth) * 100 : 0;
+            setEditorSplits(editorSplits.split1, percent);
+        }
     };
 
     const stopDrag = (): void => {
@@ -122,68 +160,97 @@ function setupEditorDivider(): void {
             return;
         }
         isDragging = false;
+        activeDivider = null;
         activePointerId = null;
         document.body.classList.remove('editor-resizing');
     };
 
-    elEditorDivider.addEventListener('pointerdown', event => {
+    const makePointerDown = (divider: DividerType) => (event: PointerEvent) => {
         if (window.innerWidth <= 980) {
             return;
         }
 
         isDragging = true;
+        activeDivider = divider;
         activePointerId = event.pointerId;
-        elEditorDivider.setPointerCapture(event.pointerId);
+        const el = divider === 'divider1' ? elDivider1 : elDivider2;
+        el?.setPointerCapture(event.pointerId);
         document.body.classList.add('editor-resizing');
-        updateFromClientX(event.clientX);
+        updateFromClientX(event.clientX, divider);
         event.preventDefault();
-    });
+    };
 
-    elEditorDivider.addEventListener('pointermove', event => {
-        if (!isDragging || activePointerId !== event.pointerId) {
+    const makePointerMove = (divider: DividerType) => (event: PointerEvent) => {
+        if (!isDragging || activeDivider !== divider || activePointerId !== event.pointerId) {
             return;
         }
-        updateFromClientX(event.clientX);
-    });
+        updateFromClientX(event.clientX, divider);
+    };
 
-    elEditorDivider.addEventListener('pointerup', event => {
-        if (activePointerId === event.pointerId) {
+    const makePointerUp = (divider: DividerType) => (event: PointerEvent) => {
+        if (activeDivider === divider && activePointerId === event.pointerId) {
             stopDrag();
         }
-    });
+    };
 
-    elEditorDivider.addEventListener('pointercancel', event => {
-        if (activePointerId === event.pointerId) {
-            stopDrag();
+    const makeKeyDown = (divider: DividerType) => (event: KeyboardEvent) => {
+        if (event.target !== (divider === 'divider1' ? elDivider1 : elDivider2)) {
+            return;
         }
-    });
 
-    elEditorDivider.addEventListener('lostpointercapture', stopDrag);
-
-    elEditorDivider.addEventListener('keydown', event => {
-        if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            setEditorSplit(editorLeftPercent - 2);
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            setEditorSplit(editorLeftPercent + 2);
-        } else if (event.key === 'Home') {
-            event.preventDefault();
-            setEditorSplit(MIN_EDITOR_LEFT_PERCENT);
-        } else if (event.key === 'End') {
-            event.preventDefault();
-            setEditorSplit(MAX_EDITOR_LEFT_PERCENT);
+        if (divider === 'divider1') {
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                setEditorSplits(editorSplits.split1 - 2, editorSplits.split2);
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                setEditorSplits(editorSplits.split1 + 2, editorSplits.split2);
+            } else if (event.key === 'Home') {
+                event.preventDefault();
+                setEditorSplits(20, editorSplits.split2);
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                setEditorSplits(50, editorSplits.split2);
+            }
+        } else if (divider === 'divider2') {
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                setEditorSplits(editorSplits.split1, editorSplits.split2 - 2);
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                setEditorSplits(editorSplits.split1, editorSplits.split2 + 2);
+            } else if (event.key === 'Home') {
+                event.preventDefault();
+                setEditorSplits(editorSplits.split1, 20);
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                setEditorSplits(editorSplits.split1, 50);
+            }
         }
-    });
+    };
+
+    elDivider1.addEventListener('pointerdown', makePointerDown('divider1'));
+    elDivider1.addEventListener('pointermove', makePointerMove('divider1'));
+    elDivider1.addEventListener('pointerup', makePointerUp('divider1'));
+    elDivider1.addEventListener('pointercancel', makePointerUp('divider1'));
+    elDivider1.addEventListener('lostpointercapture', stopDrag);
+    elDivider1.addEventListener('keydown', makeKeyDown('divider1'));
+
+    elDivider2.addEventListener('pointerdown', makePointerDown('divider2'));
+    elDivider2.addEventListener('pointermove', makePointerMove('divider2'));
+    elDivider2.addEventListener('pointerup', makePointerUp('divider2'));
+    elDivider2.addEventListener('pointercancel', makePointerUp('divider2'));
+    elDivider2.addEventListener('lostpointercapture', stopDrag);
+    elDivider2.addEventListener('keydown', makeKeyDown('divider2'));
 
     window.addEventListener('resize', () => {
-        setEditorSplit(editorLeftPercent);
+        setEditorSplits(editorSplits.split1, editorSplits.split2);
     });
 
-    setEditorSplit(DEFAULT_EDITOR_LEFT_PERCENT);
+    setEditorSplits(DEFAULT_EDITOR_SPLITS.split1, DEFAULT_EDITOR_SPLITS.split2);
 }
 
-function renderSegmentList(timeline: Timeline): void {
+function renderTimeline(timeline: Timeline): void {
     if (!elSegmentList) return;
 
     elSegmentList.innerHTML = '';
@@ -193,6 +260,7 @@ function renderSegmentList(timeline: Timeline): void {
         button.type = 'button';
         button.className = `editor-segment-card${index === state.selectedSegmentIndex ? ' selected' : ''}`;
         button.dataset.segmentIndex = String(index);
+        button.draggable = true;
         button.innerHTML = `
             <span class="editor-segment-handle" aria-hidden="true">::</span>
             <span class="editor-segment-title">${escapeHtml(segment.title)}</span>
@@ -202,102 +270,219 @@ function renderSegmentList(timeline: Timeline): void {
 
         button.addEventListener('click', () => {
             state.selectedSegmentIndex = index;
+            state.selectedInfoSectionIndex = null;
             render(timeline);
         });
 
-        elSegmentList.appendChild(button);
+        // Drag/drop handlers for segments
+        button.addEventListener('dragstart', (e) => {
+            dragState = { sourceIndex: index, isDragging: true, dragType: 'segment' };
+            button.classList.add('dragging');
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        });
+
+        button.addEventListener('dragend', () => {
+            button.classList.remove('dragging');
+            dragState = { sourceIndex: -1, isDragging: false, dragType: 'segment' };
+        });
+
+        button.addEventListener('dragover', (e) => {
+            if (dragState.dragType !== 'segment' || dragState.sourceIndex === index) {
+                return;
+            }
+            e.preventDefault();
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'move';
+            }
+            button.classList.add('drag-over');
+        });
+
+        button.addEventListener('dragleave', () => {
+            button.classList.remove('drag-over');
+        });
+
+        button.addEventListener('drop', (e) => {
+            e.preventDefault();
+            button.classList.remove('drag-over');
+            if (dragState.dragType === 'segment' && dragState.sourceIndex >= 0 && dragState.sourceIndex !== index) {
+                // Swap segments
+                const [removed] = timeline.segments.splice(dragState.sourceIndex, 1);
+                const targetIndex = dragState.sourceIndex < index ? index - 1 : index;
+                timeline.segments.splice(targetIndex, 0, removed);
+                
+                if (state.selectedSegmentIndex === dragState.sourceIndex) {
+                    state.selectedSegmentIndex = targetIndex;
+                }
+                state.selectedInfoSectionIndex = null;
+                saveCourse();
+                render(timeline);
+            }
+        });
+
+        const row = document.createElement('div');
+        row.className = 'editor-card-row';
+        row.appendChild(button);
+
+        if (index === state.selectedSegmentIndex && timeline.segments.length > 1) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'editor-card-delete';
+            deleteBtn.title = 'Delete segment';
+            deleteBtn.setAttribute('aria-label', `Delete segment: ${segment.title}`);
+            deleteBtn.textContent = '×';
+            deleteBtn.addEventListener('click', () => removeSegment(index, timeline));
+            row.appendChild(deleteBtn);
+        }
+
+        elSegmentList.appendChild(row);
     });
 }
 
-function renderInspector(timeline: Timeline): void {
-    if (!elInspector) return;
+function renderInfoList(timeline: Timeline): void {
+    if (!elInfoSectionsList) return;
 
     const selected = timeline.segments[state.selectedSegmentIndex];
-    const isValid = selected.title.trim().length > 0 && selected.duration > 0;
-    const durationMinutes = Math.floor(selected.duration / 60);
-    const durationSeconds = selected.duration % 60;
-    const infoSections = selected.info ?? [];
-    const infoMarkup = infoSections.length === 0
-        ? '<p class="editor-empty-state">No info blocks yet. Add one to define prompts, talking points, or demos.</p>'
-        : infoSections
-            .map((section, index) => `
-                <div class="editor-info-section" data-info-index="${index}">
-                    <div class="editor-info-section-header">
-                        <strong>Info Block ${index + 1}</strong>
-                        <button type="button" class="editor-btn editor-btn-danger" data-action="remove-info-block" data-info-index="${index}">Remove</button>
-                    </div>
-                    <div class="editor-field">
-                        <label for="info-label-${index}">Label</label>
-                        <input id="info-label-${index}" data-field="info-label" data-info-index="${index}" type="text" value="${escapeHtml(section.label)}" />
-                    </div>
-                    <div class="editor-field">
-                        <label for="info-items-${index}">Items, one per line</label>
-                        <textarea id="info-items-${index}" data-field="info-items" data-info-index="${index}" rows="4">${escapeHtml(toLineList(section.items))}</textarea>
-                    </div>
-                    <div class="editor-field">
-                        <label for="info-transcript-${index}">Transcript lines, one per line</label>
-                        <textarea id="info-transcript-${index}" data-field="info-transcript" data-info-index="${index}" rows="4">${escapeHtml(toLineList(section.transcript))}</textarea>
-                    </div>
-                </div>
-            `)
-            .join('');
+    if (!selected) {
+        elInfoSectionsList.innerHTML = '<div class="editor-info-editor-empty">No segment selected</div>';
+        return;
+    }
 
-    elInspector.innerHTML = `
-        <section class="editor-inspector-panel editor-inspector-panel-top" aria-label="Segment data panel">
-            <div class="editor-inspector-panel-header">
-                <div>
-                    <h3>Segment Data</h3>
-                </div>
-                <div class="editor-inspector-status${isValid ? ' is-valid' : ''}">${isValid ? 'Ready' : 'Needs attention'}</div>
-            </div>
-            <div class="editor-field">
-                <label>Title</label>
-                <input data-field="title" type="text" value="${escapeHtml(selected.title)}" />
-            </div>
-            <div class="editor-field-row editor-segment-meta-row">
-                <div class="editor-field">
-                    <label>Type</label>
-                    <select data-field="type">
-                        ${SEGMENT_TYPES.map(type => `<option value="${type}"${(selected.type ?? 'lecture') === type ? ' selected' : ''}>${type}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="editor-field editor-duration-part">
-                    <label for="duration-minutes">Minutes</label>
-                    <input id="duration-minutes" data-field="duration-minutes" type="number" min="0" step="1" value="${durationMinutes}" />
-                </div>
-                <div class="editor-field editor-duration-part">
-                    <label for="duration-seconds">Seconds</label>
-                    <input id="duration-seconds" data-field="duration-seconds" type="number" min="0" max="59" step="1" value="${durationSeconds}" />
-                </div>
-            </div>
-        </section>
-        <section class="editor-inspector-panel editor-inspector-panel-bottom" aria-label="Info element editor panel">
-            <div class="editor-inspector-panel-header">
-                <div>
-                    <h3>Info Element Editor</h3>
-                </div>
-                <button type="button" class="editor-btn" data-action="add-info-block">Add Info Block</button>
-            </div>
-            <div class="editor-inspector-panel-body">
-                <div class="editor-field">
-                    <label>Segment Transcript</label>
-                    <textarea data-field="segment-transcript" rows="4" placeholder="Optional notes for the entire segment">${escapeHtml(selected.transcript ?? '')}</textarea>
-                </div>
-                <div class="editor-field">
-                    <label>Info Sections</label>
-                    <div class="editor-info-list">
-                        ${infoMarkup}
+    const infoSections = selected.info ?? [];
+    if (infoSections.length === 0) {
+        elInfoSectionsList.innerHTML = '<div class="editor-info-editor-empty">No info sections yet. Add one to define prompts or talking points.</div>';
+        return;
+    }
+
+    elInfoSectionsList.innerHTML = '';
+
+    infoSections.forEach((section, index) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `editor-info-card${index === state.selectedInfoSectionIndex ? ' selected' : ''}`;
+        card.dataset.infoIndex = String(index);
+        card.draggable = true;
+        card.innerHTML = `
+            <span class="editor-info-handle" aria-hidden="true">::</span>
+            <span class="editor-info-card-label">${escapeHtml(section.label)}</span>
+            <span class="editor-info-card-count">${section.items.length} items</span>
+        `;
+
+        card.addEventListener('click', () => {
+            state.selectedInfoSectionIndex = index;
+            render(timeline);
+        });
+
+        // Drag/drop handlers for info sections
+        card.addEventListener('dragstart', (e) => {
+            dragState = { sourceIndex: index, isDragging: true, dragType: 'info' };
+            card.classList.add('dragging');
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+            dragState = { sourceIndex: -1, isDragging: false, dragType: 'info' };
+        });
+
+        card.addEventListener('dragover', (e) => {
+            if (dragState.dragType !== 'info' || dragState.sourceIndex === index) {
+                return;
+            }
+            e.preventDefault();
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'move';
+            }
+            card.classList.add('drag-over');
+        });
+
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over');
+        });
+
+        card.addEventListener('drop', (e) => {
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            if (dragState.dragType === 'info' && dragState.sourceIndex >= 0 && dragState.sourceIndex !== index && selected.info) {
+                // Swap info sections
+                const [removed] = selected.info.splice(dragState.sourceIndex, 1);
+                const targetIndex = dragState.sourceIndex < index ? index - 1 : index;
+                selected.info.splice(targetIndex, 0, removed);
+                
+                if (state.selectedInfoSectionIndex === dragState.sourceIndex) {
+                    state.selectedInfoSectionIndex = targetIndex;
+                }
+                saveCourse();
+                render(timeline);
+            }
+        });
+
+        const row = document.createElement('div');
+        row.className = 'editor-card-row';
+        row.appendChild(card);
+
+        if (index === state.selectedInfoSectionIndex) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'editor-card-delete';
+            deleteBtn.title = 'Remove info section';
+            deleteBtn.setAttribute('aria-label', `Remove info section: ${section.label}`);
+            deleteBtn.textContent = '×';
+            deleteBtn.addEventListener('click', () => {
+                removeInfoBlock(index);
+                if (state.timeline) render(state.timeline);
+            });
+            row.appendChild(deleteBtn);
+        }
+
+        elInfoSectionsList.appendChild(row);
+    });
+}
+
+function renderInfoEditor(timeline: Timeline): void {
+    if (!elInfoEditor) return;
+
+    const selected = timeline.segments[state.selectedSegmentIndex];
+    if (!selected) {
+        elInfoEditor.innerHTML = '<div class="editor-info-editor-empty">Select a segment to edit its info sections.</div>';
+        return;
+    }
+
+    const infoSections = selected.info ?? [];
+    const selectedInfo = state.selectedInfoSectionIndex !== null ? infoSections[state.selectedInfoSectionIndex] : null;
+
+    if (!selectedInfo) {
+        elInfoEditor.innerHTML = '<div class="editor-info-editor-empty">Select an info section to edit it.</div>';
+        return;
+    }
+
+    const index = state.selectedInfoSectionIndex!;
+    elInfoEditor.innerHTML = `
+        <div class="editor-info-editor-form">
+            <div class="editor-info-editor-panel">
+                <div class="editor-info-editor-panel-header">
+                    <div>
+                        <h3>Info Section ${index + 1}</h3>
                     </div>
+                    <button type="button" class="editor-btn editor-btn-danger" data-action="remove-info-block" data-info-index="${index}">Remove</button>
                 </div>
                 <div class="editor-field">
-                    <label>Validation</label>
-                    <ul class="editor-validation-list">
-                        <li>${selected.title.trim().length > 0 ? 'OK' : 'Missing title'}</li>
-                        <li>${selected.duration > 0 ? 'OK' : 'Duration must be greater than 0'}</li>
-                    </ul>
+                    <label for="info-label-${index}">Label</label>
+                    <input id="info-label-${index}" data-field="info-label" data-info-index="${index}" type="text" value="${escapeHtml(selectedInfo.label)}" />
+                </div>
+                <div class="editor-field">
+                    <label for="info-items-${index}">Items, one per line</label>
+                    <textarea id="info-items-${index}" data-field="info-items" data-info-index="${index}" rows="6">${escapeHtml(toLineList(selectedInfo.items))}</textarea>
+                </div>
+                <div class="editor-field">
+                    <label for="info-transcript-${index}">Transcript lines, one per line</label>
+                    <textarea id="info-transcript-${index}" data-field="info-transcript" data-info-index="${index}" rows="6">${escapeHtml(toLineList(selectedInfo.transcript))}</textarea>
                 </div>
             </div>
-        </section>
+        </div>
     `;
 }
 
@@ -312,13 +497,18 @@ function render(timeline: Timeline): void {
         elTotalDuration.textContent = formatDuration(totalDuration(timeline));
     }
 
-    renderSegmentList(timeline);
-    renderInspector(timeline);
+    renderTimeline(timeline);
+    renderInfoList(timeline);
+    renderInfoEditor(timeline);
+
+    if (elAddInfoBtn) {
+        elAddInfoBtn.disabled = state.selectedSegmentIndex < 0;
+    }
 }
 
-function handleInspectorInput(event: Event): void {
+function handleEditorInput(event: Event): void {
     const target = event.target;
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) {
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
         return;
     }
 
@@ -332,60 +522,34 @@ function handleInspectorInput(event: Event): void {
     const infoIndexRaw = target.dataset.infoIndex;
     const infoIndex = infoIndexRaw !== undefined ? Number(infoIndexRaw) : -1;
 
-    if (field === 'title') {
-        selected.title = target.value;
-    } else if (field === 'type' && target instanceof HTMLSelectElement) {
-        if (SEGMENT_TYPES.includes(target.value as NonNullable<Segment['type']>)) {
-            selected.type = target.value as NonNullable<Segment['type']>;
-        }
-    } else if ((field === 'duration-minutes' || field === 'duration-seconds') && target instanceof HTMLInputElement) {
-        const minutesInput = elInspector?.querySelector('input[data-field="duration-minutes"]') as HTMLInputElement | null;
-        const secondsInput = elInspector?.querySelector('input[data-field="duration-seconds"]') as HTMLInputElement | null;
-
-        if (minutesInput && secondsInput) {
-            const minutesRaw = Number.parseInt(minutesInput.value, 10);
-            const secondsRaw = Number.parseInt(secondsInput.value, 10);
-
-            if (!Number.isNaN(minutesRaw) && !Number.isNaN(secondsRaw)) {
-                const minutes = Math.max(0, minutesRaw);
-                const seconds = Math.min(59, Math.max(0, secondsRaw));
-
-                if (seconds !== secondsRaw) {
-                    secondsInput.value = String(seconds);
-                }
-
-                const duration = minutes * 60 + seconds;
-                if (duration > 0) {
-                    selected.duration = duration;
-                }
-            }
-        }
-    } else if (field === 'segment-transcript' && target instanceof HTMLTextAreaElement) {
-        selected.transcript = target.value;
-    } else if (field === 'info-label' && target instanceof HTMLInputElement && infoIndex >= 0) {
+    if (field === 'info-label' && infoIndex >= 0) {
         const section = selected.info?.[infoIndex];
         if (section) {
             section.label = target.value;
+            saveCourse();
         }
-    } else if (field === 'info-items' && target instanceof HTMLTextAreaElement && infoIndex >= 0) {
+    } else if (field === 'info-items' && infoIndex >= 0) {
         const section = selected.info?.[infoIndex];
         if (section) {
             section.items = parseLineList(target.value);
+            saveCourse();
         }
-    } else if (field === 'info-transcript' && target instanceof HTMLTextAreaElement && infoIndex >= 0) {
+    } else if (field === 'info-transcript' && infoIndex >= 0) {
         const section = selected.info?.[infoIndex];
         if (section) {
             section.transcript = parseLineList(target.value);
+            saveCourse();
         }
     }
+}
 
-    if (elCourseTitle) {
-        elCourseTitle.textContent = timeline.title ?? 'Untitled Course';
-    }
-    if (elTotalDuration) {
-        elTotalDuration.textContent = formatDuration(totalDuration(timeline));
-    }
-    renderSegmentList(timeline);
+function removeSegment(index: number, timeline: Timeline): void {
+    if (timeline.segments.length <= 1) return;
+    timeline.segments.splice(index, 1);
+    state.selectedSegmentIndex = Math.min(state.selectedSegmentIndex, timeline.segments.length - 1);
+    state.selectedInfoSectionIndex = null;
+    saveCourse();
+    render(timeline);
 }
 
 function addInfoBlock(): void {
@@ -398,11 +562,13 @@ function addInfoBlock(): void {
     }
 
     const nextBlock: InfoSection = {
-        label: 'New Info Block',
+        label: 'New Info Section',
         items: [],
         transcript: [],
     };
     selected.info.push(nextBlock);
+    state.selectedInfoSectionIndex = selected.info.length - 1;
+    saveCourse();
 }
 
 function removeInfoBlock(index: number): void {
@@ -411,9 +577,17 @@ function removeInfoBlock(index: number): void {
         return;
     }
     selected.info.splice(index, 1);
+    
+    if (state.selectedInfoSectionIndex === index) {
+        state.selectedInfoSectionIndex = selected.info.length > 0 ? Math.min(index, selected.info.length - 1) : null;
+    } else if (state.selectedInfoSectionIndex !== null && state.selectedInfoSectionIndex > index) {
+        state.selectedInfoSectionIndex -= 1;
+    }
+    
+    saveCourse();
 }
 
-function handleInspectorClick(event: MouseEvent): void {
+function handleEditorClick(event: MouseEvent): void {
     const target = event.target;
     if (!(target instanceof Element)) {
         return;
@@ -435,6 +609,30 @@ function handleInspectorClick(event: MouseEvent): void {
 
     if (state.timeline) {
         render(state.timeline);
+    }
+}
+
+async function saveCourse(): Promise<void> {
+    if (!state.timeline) {
+        return;
+    }
+
+    const courseId = getCourseId();
+    if (!courseId) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/courses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ courseId, timeline: state.timeline }),
+        });
+        if (!response.ok) {
+            console.error('Failed to save course');
+        }
+    } catch (err) {
+        console.error('Error saving course:', err);
     }
 }
 
@@ -463,10 +661,11 @@ async function init(): Promise<void> {
 
     state.timeline = timeline;
 
-    setupEditorDivider();
+    setupEditorDividers();
 
-    elInspector?.addEventListener('input', handleInspectorInput);
-    elInspector?.addEventListener('click', handleInspectorClick);
+    elInfoEditor?.addEventListener('input', handleEditorInput);
+    elInfoEditor?.addEventListener('click', handleEditorClick);
+    elAddInfoBtn?.addEventListener('click', addInfoBlock);
 
     render(timeline);
 
@@ -479,10 +678,25 @@ async function init(): Promise<void> {
         if (event.key === 'ArrowDown') {
             event.preventDefault();
             state.selectedSegmentIndex = Math.min(state.selectedSegmentIndex + 1, timeline.segments.length - 1);
+            state.selectedInfoSectionIndex = null;
             render(timeline);
         } else if (event.key === 'ArrowUp') {
             event.preventDefault();
             state.selectedSegmentIndex = Math.max(state.selectedSegmentIndex - 1, 0);
+            state.selectedInfoSectionIndex = null;
+            render(timeline);
+        } else if (event.key === 'Tab' && elInfoSectionsList && elInfoSectionsList.children.length > 0) {
+            // Tab navigation within info sections (optional enhancement)
+            const infoCards = Array.from(elInfoSectionsList.querySelectorAll('.editor-info-card'));
+            if (infoCards.length === 0) return;
+
+            if (state.selectedInfoSectionIndex === null) {
+                state.selectedInfoSectionIndex = 0;
+            } else if (event.shiftKey) {
+                state.selectedInfoSectionIndex = Math.max(state.selectedInfoSectionIndex - 1, 0);
+            } else {
+                state.selectedInfoSectionIndex = Math.min(state.selectedInfoSectionIndex + 1, infoCards.length - 1);
+            }
             render(timeline);
         }
     });

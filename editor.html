@@ -21,10 +21,11 @@
         </header>
 
         <section class="editor-content" aria-label="Editor workspace">
-            <div class="editor-main" aria-label="Timeline canvas">
-                <div class="editor-main-header">
+            <!-- LEFT PANEL: Timeline -->
+            <div id="editor-timeline" class="editor-panel editor-timeline" aria-label="Timeline canvas">
+                <div class="editor-panel-header">
                     <h2>Timeline</h2>
-                    <div class="editor-main-actions" aria-label="Timeline quick actions">
+                    <div class="editor-panel-actions" aria-label="Timeline quick actions">
                         <button type="button" class="editor-btn" disabled>Add Segment</button>
                         <button type="button" class="editor-btn" disabled>Add Break</button>
                     </div>
@@ -32,21 +33,47 @@
                 <div id="editor-segment-list" class="editor-segment-list"></div>
             </div>
 
+            <!-- DIVIDER 1: Between Timeline and Info List -->
             <div
-                id="editor-divider"
+                id="editor-divider-1"
                 class="editor-divider"
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize timeline and inspector"
-                aria-valuemin="28"
-                aria-valuemax="72"
+                aria-label="Resize timeline and info sections"
+                aria-valuemin="20"
+                aria-valuemax="50"
+                aria-valuenow="28"
+                tabindex="0"
+            ></div>
+
+            <!-- MIDDLE PANEL: Info Sections List -->
+            <div id="editor-info-list" class="editor-panel editor-info-list" aria-label="Info sections for selected segment">
+                <div class="editor-panel-header">
+                    <h2>Info Sections</h2>
+                    <div class="editor-panel-actions">
+                        <button type="button" class="editor-btn" id="editor-add-info-btn" disabled>+ Add Section</button>
+                    </div>
+                </div>
+                <div id="editor-info-sections" class="editor-info-sections"></div>
+            </div>
+
+            <!-- DIVIDER 2: Between Info List and Info Editor -->
+            <div
+                id="editor-divider-2"
+                class="editor-divider"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize info sections and editor"
+                aria-valuemin="20"
+                aria-valuemax="50"
                 aria-valuenow="36"
                 tabindex="0"
             ></div>
 
-            <aside class="editor-inspector" aria-label="Segment inspector">
-                <h2>Inspector</h2>
-                <div id="editor-inspector-content" class="editor-inspector-content"></div>
+            <!-- RIGHT PANEL: Info Section Editor -->
+            <aside id="editor-info-editor" class="editor-panel editor-info-editor" aria-label="Edit selected info section">
+                <h2>Edit Info Section</h2>
+                <div id="editor-info-editor-content" class="editor-info-editor-content"></div>
             </aside>
         </section>
 
