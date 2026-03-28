@@ -271,7 +271,36 @@ The app is complete when:
 
 ---
 
-## � GitHub Flow
+## 🪬 Issue Tracking
+
+This project uses **bd (beads)** for local issue tracking alongside GitHub Issues.
+
+Run `bd prime` at the start of an agent session for workflow context.
+
+**Quick reference:**
+
+```
+bd ready                              # Find unblocked work to pick up
+bd create "Title" -t task -p 2       # Create a new issue (priority 0–3)
+bd create "Title" -t bug -p 1        # Create a bug
+bd update <id> --claim                # Claim a task (marks in-progress)
+bd show <id>                          # View task details
+bd close <id> --reason "Done"         # Complete an issue
+bd list                               # List all open issues
+bd dep add <child> <parent>           # Mark <child> blocked by <parent>
+```
+
+**Workflow for new features:**
+
+1. `bd create "Feature: <title>" -t task -p 2` — create a beads issue
+2. `bd update <id> --claim` — claim it before starting work
+3. Create the corresponding GitHub issue (for external visibility)
+4. Reference both IDs in commits: `Add foo (bd-abc, #42)`
+5. `bd close <id>` when done
+
+---
+
+## 🐙 GitHub Flow
 
 ### Branch Strategy
 
