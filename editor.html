@@ -21,11 +21,11 @@
         </header>
 
         <section class="editor-content" aria-label="Editor workspace">
-            <!-- LEFT PANEL: Timeline -->
-            <div id="editor-timeline" class="editor-panel editor-timeline" aria-label="Timeline canvas">
+            <!-- LEFT PANEL: Chapters -->
+            <div id="editor-timeline" class="editor-panel editor-timeline" aria-label="Chapters canvas">
                 <div class="editor-panel-header">
-                    <h2>Timeline</h2>
-                    <div class="editor-panel-actions" aria-label="Timeline quick actions">
+                    <h2>Chapters</h2>
+                    <div class="editor-panel-actions" aria-label="Chapters quick actions">
                         <button type="button" class="editor-btn" disabled>+ Add Segment</button>
                         <button type="button" class="editor-btn" disabled>+ Add Break</button>
                     </div>
@@ -33,23 +33,23 @@
                 <div id="editor-segment-list" class="editor-segment-list"></div>
             </div>
 
-            <!-- DIVIDER 1: Between Timeline and Info List -->
+            <!-- DIVIDER 1: Between Chapters and Sections -->
             <div
                 id="editor-divider-1"
                 class="editor-divider"
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize timeline and info sections"
+                aria-label="Resize chapters and sections"
                 aria-valuemin="20"
                 aria-valuemax="50"
                 aria-valuenow="28"
                 tabindex="0"
             ></div>
 
-            <!-- MIDDLE PANEL: Info Sections List -->
-            <div id="editor-info-list" class="editor-panel editor-info-list" aria-label="Info sections for selected segment">
+            <!-- MIDDLE PANEL: Sections List -->
+            <div id="editor-info-list" class="editor-panel editor-info-list" aria-label="Sections for selected chapter">
                 <div class="editor-panel-header">
-                    <h2>Info Sections</h2>
+                    <h2>Sections</h2>
                     <div class="editor-panel-actions">
                         <button type="button" class="editor-btn" id="editor-add-info-btn" disabled>+ Add Section</button>
                     </div>
@@ -57,13 +57,13 @@
                 <div id="editor-info-sections" class="editor-info-sections"></div>
             </div>
 
-            <!-- DIVIDER 2: Between Info List and Info Editor -->
+            <!-- DIVIDER 2: Between Sections and Section Editor -->
             <div
                 id="editor-divider-2"
                 class="editor-divider"
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize info sections and editor"
+                aria-label="Resize sections and editor"
                 aria-valuemin="20"
                 aria-valuemax="50"
                 aria-valuenow="36"

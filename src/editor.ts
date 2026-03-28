@@ -32,6 +32,7 @@ let dragState: { sourceIndex: number; isDragging: boolean; dragType: 'segment' |
 };
 
 const SEGMENT_TYPES: Array<NonNullable<Segment['type']>> = ['lecture', 'demo', 'break'];
+const SECTION_TYPE_OPTIONS = ['Narration', 'Demo', 'Prompt', 'Rule'];
 const DEFAULT_EDITOR_SPLITS = { split1: 33, split2: 33 };
 let editorSplits = { ...DEFAULT_EDITOR_SPLITS };
 
@@ -63,19 +64,127 @@ function formatDuration(seconds: number): string {
     return `${remainingSeconds}s`;
 }
 
+function formatMinutesSeconds(totalSeconds: number): string {
+    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+    const minutes = Math.floor(safeSeconds / 60);
+    const seconds = safeSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 function totalDuration(timeline: Timeline): number {
     return timeline.segments.reduce((sum, segment) => sum + segment.duration, 0);
 }
 
-function parseLineList(value: string): string[] {
-    return value
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
+function parseMarkdownLines(value: string): string[] {
+    const normalized = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    return normalized.length === 0 ? [] : normalized.split('\n');
 }
 
 function toLineList(value: string[] | undefined): string {
     return (value ?? []).join('\n');
+}
+
+function openMarkdownEditor(field: 'info-items' | 'info-transcript', infoIndex: number): void {
+    const selected = getSelectedSegment();
+    if (!selected) {
+        return;
+    }
+
+    const section = selected.info?.[infoIndex];
+    if (!section) {
+        return;
+    }
+
+    const heading = field === 'info-items' ? 'Edit Instructions (Markdown)' : 'Edit Transcript (Markdown)';
+    const value = field === 'info-items' ? toLineList(section.items) : toLineList(section.transcript);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'editor-markdown-overlay';
+    overlay.innerHTML = `
+        <div class="editor-markdown-dialog" role="dialog" aria-modal="true" aria-label="${heading}">
+            <div class="editor-markdown-header">
+                <h3>${heading}</h3>
+                <button type="button" class="editor-btn" data-action="close-markdown">Close</button>
+            </div>
+            <textarea class="editor-markdown-textarea">${escapeHtml(value)}</textarea>
+            <div class="editor-markdown-actions">
+                <button type="button" class="editor-btn" data-action="cancel-markdown">Cancel</button>
+                <button type="button" class="editor-btn editor-btn-primary" data-action="apply-markdown">Apply</button>
+            </div>
+        </div>
+    `;
+
+    const textarea = overlay.querySelector('.editor-markdown-textarea') as HTMLTextAreaElement | null;
+    const closeBtn = overlay.querySelector('[data-action="close-markdown"]') as HTMLButtonElement | null;
+    const cancelBtn = overlay.querySelector('[data-action="cancel-markdown"]') as HTMLButtonElement | null;
+    const applyBtn = overlay.querySelector('[data-action="apply-markdown"]') as HTMLButtonElement | null;
+
+    const close = (): void => {
+        document.removeEventListener('keydown', onKeyDown);
+        overlay.remove();
+    };
+
+    const apply = (): void => {
+        if (!textarea) {
+            close();
+            return;
+        }
+
+        if (field === 'info-items') {
+            section.items = parseMarkdownLines(textarea.value);
+        } else {
+            section.transcript = parseMarkdownLines(textarea.value);
+        }
+
+        saveCourse();
+        if (state.timeline) {
+            render(state.timeline);
+        }
+        close();
+    };
+
+    const onKeyDown = (event: KeyboardEvent): void => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+        }
+    };
+
+    closeBtn?.addEventListener('click', close);
+    cancelBtn?.addEventListener('click', close);
+    applyBtn?.addEventListener('click', apply);
+    overlay.addEventListener('click', event => {
+        if (event.target === overlay) {
+            close();
+        }
+    });
+
+    document.addEventListener('keydown', onKeyDown);
+    document.body.appendChild(overlay);
+
+    if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+}
+
+function getSectionUiType(section: InfoSection): string {
+    const explicitType = (section as InfoSection & { type?: string }).type;
+    if (explicitType && SECTION_TYPE_OPTIONS.includes(explicitType)) {
+        return explicitType;
+    }
+
+    const label = section.label.trim().toLowerCase();
+    if (label.includes('demo')) {
+        return 'Demo';
+    }
+    if (label.includes('prompt') || label.includes('question')) {
+        return 'Prompt';
+    }
+    if (label.includes('rule')) {
+        return 'Rule';
+    }
+    return 'Narration';
 }
 
 function getSelectedSegment(): Segment | null {
@@ -264,8 +373,7 @@ function renderTimeline(timeline: Timeline): void {
         button.innerHTML = `
             <span class="editor-segment-handle" aria-hidden="true">::</span>
             <span class="editor-segment-title">${escapeHtml(segment.title)}</span>
-            <span class="editor-segment-duration">${formatDuration(segment.duration)}</span>
-            <span class="editor-segment-type">${escapeHtml(segment.type ?? 'lecture')}</span>
+            <span class="editor-segment-duration">${formatMinutesSeconds(segment.duration)}</span>
         `;
 
         button.addEventListener('click', () => {
@@ -356,8 +464,12 @@ function renderInfoList(timeline: Timeline): void {
     }
 
     elInfoSectionsList.innerHTML = '';
+    const sectionDurationSeconds = infoSections.length > 0
+        ? Math.round(selected.duration / infoSections.length)
+        : 0;
 
     infoSections.forEach((section, index) => {
+        const sectionType = getSectionUiType(section);
         const card = document.createElement('button');
         card.type = 'button';
         card.className = `editor-info-card${index === state.selectedInfoSectionIndex ? ' selected' : ''}`;
@@ -366,7 +478,8 @@ function renderInfoList(timeline: Timeline): void {
         card.innerHTML = `
             <span class="editor-info-handle" aria-hidden="true">::</span>
             <span class="editor-info-card-label">${escapeHtml(section.label)}</span>
-            <span class="editor-info-card-count">${section.items.length} items</span>
+            <span class="editor-info-card-type">${escapeHtml(sectionType)}</span>
+            <span class="editor-info-card-count">${formatMinutesSeconds(sectionDurationSeconds)}</span>
         `;
 
         card.addEventListener('click', () => {
@@ -460,12 +573,26 @@ function renderInfoEditor(timeline: Timeline): void {
     }
 
     const index = state.selectedInfoSectionIndex!;
+    const sectionType = getSectionUiType(selectedInfo);
+    const durationMinutes = Math.floor(selected.duration / 60);
+    const durationSeconds = selected.duration % 60;
     elInfoEditor.innerHTML = `
         <div class="editor-info-editor-form">
             <div class="editor-info-editor-panel">
-                <div class="editor-info-editor-panel-header">
-                    <div>
-                        <h3>Info Section ${index + 1}</h3>
+                <div class="editor-field-row editor-segment-meta-row">
+                    <div class="editor-field">
+                        <label for="info-type-${index}">Type</label>
+                        <select id="info-type-${index}" data-field="info-type">
+                            ${SECTION_TYPE_OPTIONS.map(type => `<option value="${type}"${type === sectionType ? ' selected' : ''}>${type}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="editor-field editor-duration-part">
+                        <label for="duration-minutes">Minutes</label>
+                        <input id="duration-minutes" data-field="duration-minutes" type="number" min="0" step="1" value="${durationMinutes}" />
+                    </div>
+                    <div class="editor-field editor-duration-part">
+                        <label for="duration-seconds">Seconds</label>
+                        <input id="duration-seconds" data-field="duration-seconds" type="number" min="0" max="59" step="1" value="${durationSeconds}" />
                     </div>
                 </div>
                 <div class="editor-field">
@@ -473,11 +600,17 @@ function renderInfoEditor(timeline: Timeline): void {
                     <input id="info-label-${index}" data-field="info-label" data-info-index="${index}" type="text" value="${escapeHtml(selectedInfo.label)}" />
                 </div>
                 <div class="editor-field">
-                    <label for="info-items-${index}">Items, one per line</label>
+                    <div class="editor-field-header">
+                        <label for="info-items-${index}">Instructions</label>
+                        <button type="button" class="editor-expand-btn" data-action="expand-markdown" data-field="info-items" data-info-index="${index}">Expand</button>
+                    </div>
                     <textarea id="info-items-${index}" data-field="info-items" data-info-index="${index}" rows="6">${escapeHtml(toLineList(selectedInfo.items))}</textarea>
                 </div>
                 <div class="editor-field">
-                    <label for="info-transcript-${index}">Transcript lines, one per line</label>
+                    <div class="editor-field-header">
+                        <label for="info-transcript-${index}">Transcript</label>
+                        <button type="button" class="editor-expand-btn" data-action="expand-markdown" data-field="info-transcript" data-info-index="${index}">Expand</button>
+                    </div>
                     <textarea id="info-transcript-${index}" data-field="info-transcript" data-info-index="${index}" rows="6">${escapeHtml(toLineList(selectedInfo.transcript))}</textarea>
                 </div>
             </div>
@@ -507,7 +640,7 @@ function render(timeline: Timeline): void {
 
 function handleEditorInput(event: Event): void {
     const target = event.target;
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) {
         return;
     }
 
@@ -521,7 +654,40 @@ function handleEditorInput(event: Event): void {
     const infoIndexRaw = target.dataset.infoIndex;
     const infoIndex = infoIndexRaw !== undefined ? Number(infoIndexRaw) : -1;
 
-    if (field === 'info-label' && infoIndex >= 0) {
+    if (field === 'info-type' && target instanceof HTMLSelectElement && infoIndex >= 0) {
+        const section = selected.info?.[infoIndex];
+        if (section && SECTION_TYPE_OPTIONS.includes(target.value)) {
+            (section as InfoSection & { type?: string }).type = target.value;
+            saveCourse();
+            renderInfoList(timeline);
+        }
+    } else if ((field === 'duration-minutes' || field === 'duration-seconds') && target instanceof HTMLInputElement) {
+        const minutesInput = elInfoEditor?.querySelector('input[data-field="duration-minutes"]') as HTMLInputElement | null;
+        const secondsInput = elInfoEditor?.querySelector('input[data-field="duration-seconds"]') as HTMLInputElement | null;
+
+        if (minutesInput && secondsInput) {
+            const minutesRaw = Number.parseInt(minutesInput.value, 10);
+            const secondsRaw = Number.parseInt(secondsInput.value, 10);
+
+            if (!Number.isNaN(minutesRaw) && !Number.isNaN(secondsRaw)) {
+                const minutes = Math.max(0, minutesRaw);
+                const seconds = Math.min(59, Math.max(0, secondsRaw));
+
+                if (seconds !== secondsRaw) {
+                    secondsInput.value = String(seconds);
+                }
+
+                const duration = minutes * 60 + seconds;
+                if (duration > 0) {
+                    selected.duration = duration;
+                    if (elTotalDuration) {
+                        elTotalDuration.textContent = formatDuration(totalDuration(timeline));
+                    }
+                    saveCourse();
+                }
+            }
+        }
+    } else if (field === 'info-label' && infoIndex >= 0) {
         const section = selected.info?.[infoIndex];
         if (section) {
             section.label = target.value;
@@ -530,13 +696,13 @@ function handleEditorInput(event: Event): void {
     } else if (field === 'info-items' && infoIndex >= 0) {
         const section = selected.info?.[infoIndex];
         if (section) {
-            section.items = parseLineList(target.value);
+            section.items = parseMarkdownLines(target.value);
             saveCourse();
         }
     } else if (field === 'info-transcript' && infoIndex >= 0) {
         const section = selected.info?.[infoIndex];
         if (section) {
-            section.transcript = parseLineList(target.value);
+            section.transcript = parseMarkdownLines(target.value);
             saveCourse();
         }
     }
@@ -604,6 +770,14 @@ function handleEditorClick(event: MouseEvent): void {
         const rawIndex = button.dataset.infoIndex;
         const index = rawIndex ? Number(rawIndex) : -1;
         removeInfoBlock(index);
+    } else if (action === 'expand-markdown') {
+        const field = button.dataset.field;
+        const rawIndex = button.dataset.infoIndex;
+        const index = rawIndex ? Number(rawIndex) : -1;
+        if ((field === 'info-items' || field === 'info-transcript') && index >= 0) {
+            openMarkdownEditor(field, index);
+            return;
+        }
     }
 
     if (state.timeline) {
