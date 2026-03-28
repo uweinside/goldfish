@@ -91,7 +91,7 @@ function setEditorSplit(leftPercent: number): void {
     if (window.innerWidth <= 980) {
         elEditorContent.style.removeProperty('grid-template-columns');
     } else {
-        elEditorContent.style.gridTemplateColumns = `minmax(260px, ${editorLeftPercent}%) 10px minmax(360px, ${100 - editorLeftPercent}%)`;
+        elEditorContent.style.gridTemplateColumns = `minmax(260px, ${editorLeftPercent}%) 2px minmax(360px, ${100 - editorLeftPercent}%)`;
     }
 
     if (elEditorDivider) {

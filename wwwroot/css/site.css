@@ -1180,7 +1180,7 @@ body.type-break   #segment-title { color: #d9d5cf; }
 
 .editor-header {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto auto;
     gap: 1rem;
     align-items: center;
     border: 1px solid var(--border);
@@ -1192,13 +1192,16 @@ body.type-break   #segment-title { color: #d9d5cf; }
 .editor-back-link {
     color: var(--accent-strong);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
+    justify-self: end;
+    background: transparent;
+    border-color: rgba(251, 191, 36, 0.65);
 }
 
 .editor-back-link:hover {
-    text-decoration: underline;
+    background: rgba(251, 191, 36, 0.12);
 }
 
 .editor-eyebrow {
@@ -1234,8 +1237,8 @@ body.type-break   #segment-title { color: #d9d5cf; }
 
 .editor-content {
     display: grid;
-    grid-template-columns: minmax(260px, 36%) 10px minmax(360px, 64%);
-    gap: 1rem;
+    grid-template-columns: minmax(260px, 36%) 2px minmax(360px, 64%);
+    gap: 0.35rem;
     min-height: 0;
     flex: 1;
 }
@@ -1532,6 +1535,16 @@ body.editor-resizing {
 
 .editor-btn-primary:hover {
     filter: brightness(1.03);
+}
+
+.editor-back-link.editor-btn {
+    background: transparent;
+    border-color: rgba(251, 191, 36, 0.65);
+    color: var(--accent-strong);
+}
+
+.editor-back-link.editor-btn:hover {
+    background: rgba(251, 191, 36, 0.12);
 }
 
 .editor-btn-danger {
