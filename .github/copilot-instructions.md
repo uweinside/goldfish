@@ -271,7 +271,43 @@ The app is complete when:
 
 ---
 
-## 🐟 Codename
+## � GitHub Flow
+
+### Branch Strategy
+
+| Branch | Purpose |
+|---|---|
+| `main` | Production / release |
+| `dev` | Integration — all features merge here first |
+| `feature/<issue#>-<slug>` | One branch per issue, branched from `dev` |
+
+### Workflow for New Features
+
+1. **Create a GitHub issue** describing the feature before writing any code
+2. **Branch from `dev`**: `git checkout -b feature/<issue#>-short-slug dev`
+3. Implement the feature on the branch
+4. **Open a PR targeting `dev`** with `Closes #<issue>` in the description body
+5. Merge the PR into `dev`
+6. `dev` → `main` is a separate release PR when ready to ship
+
+### Naming Conventions
+
+* Branch slug: lowercase, hyphen-separated, ≤ 4 words (e.g. `feature/42-overtime-grace-period`)
+* PR title: imperative mood, matches issue title (e.g. `Add overtime grace period`)
+* Commit messages: imperative mood, reference issue where relevant (e.g. `Add grace period config (#42)`)
+
+### Copilot Guidance
+
+When helping with a new feature:
+
+1. Confirm or create a GitHub issue for it first
+2. Ensure work is on a `feature/*` branch, not directly on `dev` or `main`
+3. PR description must include `Closes #<issue>` so the issue auto-closes on merge
+4. Target PR at `dev`, never directly at `main`
+
+---
+
+## �🐟 Codename
 
 Internal codename: **goldfish**
 
