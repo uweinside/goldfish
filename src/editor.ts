@@ -467,7 +467,6 @@ function renderInfoEditor(timeline: Timeline): void {
                     <div>
                         <h3>Info Section ${index + 1}</h3>
                     </div>
-                    <button type="button" class="editor-btn editor-btn-danger" data-action="remove-info-block" data-info-index="${index}">Remove</button>
                 </div>
                 <div class="editor-field">
                     <label for="info-label-${index}">Label</label>

@@ -1296,12 +1296,19 @@ body.editor-resizing {
     font-size: 1.1rem;
     font-weight: 700;
     letter-spacing: -0.02em;
+    margin: 0;
 }
 
 .editor-panel-actions {
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    min-height: 2.2rem;
+}
+
+.editor-panel-actions-placeholder {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 /* Keep existing .editor-main and .editor-inspector for backwards compatibility */

@@ -26,8 +26,8 @@
                 <div class="editor-panel-header">
                     <h2>Timeline</h2>
                     <div class="editor-panel-actions" aria-label="Timeline quick actions">
-                        <button type="button" class="editor-btn" disabled>Add Segment</button>
-                        <button type="button" class="editor-btn" disabled>Add Break</button>
+                        <button type="button" class="editor-btn" disabled>+ Add Segment</button>
+                        <button type="button" class="editor-btn" disabled>+ Add Break</button>
                     </div>
                 </div>
                 <div id="editor-segment-list" class="editor-segment-list"></div>
@@ -72,7 +72,12 @@
 
             <!-- RIGHT PANEL: Info Section Editor -->
             <aside id="editor-info-editor" class="editor-panel editor-info-editor" aria-label="Edit selected info section">
-                <h2>Edit Info Section</h2>
+                <div class="editor-panel-header">
+                    <h2>Edit Info Section</h2>
+                    <div class="editor-panel-actions editor-panel-actions-placeholder" aria-hidden="true">
+                        <button type="button" class="editor-btn" tabindex="-1">+ Add Section</button>
+                    </div>
+                </div>
                 <div id="editor-info-editor-content" class="editor-info-editor-content"></div>
             </aside>
         </section>
