@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CuePilot Editor</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <main class="editor-layout" aria-label="Course editor">
+        <header class="editor-header">
+            <a class="editor-back-link" href="/" aria-label="Back to course listing">&larr; Back to Courses</a>
+            <div class="editor-title-group">
+                <p class="editor-eyebrow">Course Editor</p>
+                <h1 id="editor-course-title">Loading course...</h1>
+            </div>
+            <div class="editor-header-meta">
+                <span id="editor-total-segments">-- segments</span>
+                <span id="editor-total-duration">--</span>
+            </div>
+        </header>
+
+        <section class="editor-content" aria-label="Editor workspace">
+            <div class="editor-main" aria-label="Timeline canvas">
+                <div class="editor-main-header">
+                    <h2>Timeline</h2>
+                    <div class="editor-main-actions" aria-label="Timeline quick actions">
+                        <button type="button" class="editor-btn" disabled>Add Segment</button>
+                        <button type="button" class="editor-btn" disabled>Add Break</button>
+                        <button type="button" class="editor-btn" disabled>Auto-Balance</button>
+                    </div>
+                </div>
+                <div id="editor-segment-list" class="editor-segment-list"></div>
+            </div>
+
+            <aside class="editor-inspector" aria-label="Segment inspector">
+                <h2>Inspector</h2>
+                <div id="editor-inspector-content" class="editor-inspector-content"></div>
+            </aside>
+        </section>
+
+        <footer class="editor-footer" aria-label="Editor actions">
+            <div class="editor-footer-left">Keyboard: Up/Down select segment</div>
+            <div class="editor-footer-right">
+                <button type="button" class="editor-btn" disabled>Preview Rehearsal</button>
+                <a id="editor-run-link" class="editor-btn editor-btn-primary" href="/">Run Timer</a>
+            </div>
+        </footer>
+    </main>
+
+    <script type="module" src="/src/editor.ts"></script>
+</body>
+</html>

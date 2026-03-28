@@ -33,16 +33,39 @@ function renderPage(page: number): void {
         const title = data.title ?? id.toUpperCase();
         const segmentCount = data.segments.length;
         const totalDuration = data.segments.reduce((sum, s) => sum + s.duration, 0);
+        const timerHref = `timer.html?course=${encodeURIComponent(id)}`;
+        const editorHref = `editor.html?course=${encodeURIComponent(id)}`;
 
-        const card = document.createElement('a');
-        card.href = `timer.html?course=${encodeURIComponent(id)}`;
+        const card = document.createElement('article');
         card.className = 'course-card';
 
-        card.innerHTML = `
+        const primaryLink = document.createElement('a');
+        primaryLink.href = timerHref;
+        primaryLink.className = 'course-card-main';
+        primaryLink.setAttribute('aria-label', `Run course ${title}`);
+        primaryLink.innerHTML = `
             <span class="course-code">${id.toUpperCase()}</span>
             <span class="course-title">${title}</span>
             <span class="course-meta">${segmentCount} segments · ${formatDuration(totalDuration)}</span>
         `;
+
+        const actions = document.createElement('div');
+        actions.className = 'course-card-actions';
+
+        const runLink = document.createElement('a');
+        runLink.href = timerHref;
+        runLink.className = 'course-card-action';
+        runLink.textContent = 'Run';
+        runLink.setAttribute('aria-label', `Run course ${title}`);
+
+        const editLink = document.createElement('a');
+        editLink.href = editorHref;
+        editLink.className = 'course-card-action course-card-action-edit';
+        editLink.textContent = 'Edit';
+        editLink.setAttribute('aria-label', `Edit course ${title}`);
+
+        actions.append(runLink, editLink);
+        card.append(primaryLink, actions);
 
         grid.appendChild(card);
     }
