@@ -1367,9 +1367,66 @@ body.editor-resizing {
 }
 
 .editor-inspector-content {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.75rem;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.editor-inspector-panel {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 0.85rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    min-height: 0;
+}
+
+.editor-inspector-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.editor-inspector-panel-header h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.editor-inspector-status {
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-radius: 999px;
+    padding: 0.35rem 0.6rem;
+    background: rgba(248, 113, 113, 0.08);
+    color: #fca5a5;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.editor-inspector-status.is-valid {
+    border-color: rgba(34, 197, 94, 0.34);
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+}
+
+.editor-inspector-panel-bottom {
+    overflow: hidden;
+}
+
+.editor-inspector-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
     overflow-y: auto;
     padding-right: 0.2rem;
 }
@@ -1386,6 +1443,15 @@ body.editor-resizing {
     gap: 0.5rem;
 }
 
+.editor-segment-meta-row {
+    grid-template-columns: minmax(140px, 1fr) minmax(90px, 112px) minmax(90px, 112px);
+    align-items: end;
+}
+
+.editor-duration-part input {
+    text-align: right;
+}
+
 .editor-field label {
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -1396,8 +1462,7 @@ body.editor-resizing {
 
 .editor-field input,
 .editor-field select,
-.editor-field textarea,
-.editor-readonly-box {
+.editor-field textarea {
     border: 1px solid var(--border);
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.025);
@@ -1419,16 +1484,6 @@ body.editor-resizing {
 
 .editor-field select {
     appearance: none;
-}
-
-.editor-subheader-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.editor-subheader-row .editor-readonly-box {
-    flex: 1;
 }
 
 .editor-info-list {
@@ -1594,9 +1649,12 @@ body.editor-resizing {
         grid-template-columns: 1fr;
     }
 
-    .editor-subheader-row {
-        flex-direction: column;
-        align-items: stretch;
+    .editor-segment-meta-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .editor-segment-meta-row .editor-field:first-child {
+        grid-column: 1 / -1;
     }
 
     .editor-segment-card {

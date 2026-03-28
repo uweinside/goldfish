@@ -213,12 +213,9 @@ function renderInspector(timeline: Timeline): void {
     if (!elInspector) return;
 
     const selected = timeline.segments[state.selectedSegmentIndex];
-    const infoCount = selected.info?.length ?? 0;
-    const transcriptCount = selected.info?.reduce((sum, section) => {
-        const count = section.transcript?.filter(block => block.trim().length > 0).length ?? 0;
-        return sum + count;
-    }, 0) ?? 0;
-    const segmentTranscriptCount = selected.transcript?.trim().length ? 1 : 0;
+    const isValid = selected.title.trim().length > 0 && selected.duration > 0;
+    const durationMinutes = Math.floor(selected.duration / 60);
+    const durationSeconds = selected.duration % 60;
     const infoSections = selected.info ?? [];
     const infoMarkup = infoSections.length === 0
         ? '<p class="editor-empty-state">No info blocks yet. Add one to define prompts, talking points, or demos.</p>'
@@ -246,47 +243,61 @@ function renderInspector(timeline: Timeline): void {
             .join('');
 
     elInspector.innerHTML = `
-        <div class="editor-field">
-            <label>Title</label>
-            <input data-field="title" type="text" value="${escapeHtml(selected.title)}" />
-        </div>
-        <div class="editor-field-row">
-            <div class="editor-field">
-                <label>Type</label>
-                <select data-field="type">
-                    ${SEGMENT_TYPES.map(type => `<option value="${type}"${(selected.type ?? 'lecture') === type ? ' selected' : ''}>${type}</option>`).join('')}
-                </select>
+        <section class="editor-inspector-panel editor-inspector-panel-top" aria-label="Segment data panel">
+            <div class="editor-inspector-panel-header">
+                <div>
+                    <h3>Segment Data</h3>
+                </div>
+                <div class="editor-inspector-status${isValid ? ' is-valid' : ''}">${isValid ? 'Ready' : 'Needs attention'}</div>
             </div>
             <div class="editor-field">
-                <label>Duration (seconds)</label>
-                <input data-field="duration" type="number" min="1" step="15" value="${selected.duration}" />
+                <label>Title</label>
+                <input data-field="title" type="text" value="${escapeHtml(selected.title)}" />
             </div>
-        </div>
-        <div class="editor-field">
-            <label>Segment Transcript</label>
-            <textarea data-field="segment-transcript" rows="4" placeholder="Optional notes for the entire segment">${escapeHtml(selected.transcript ?? '')}</textarea>
-        </div>
-        <div class="editor-field">
-            <label>Info Sections</label>
-            <div class="editor-subheader-row">
-                <div class="editor-readonly-box">${infoCount} section${infoCount === 1 ? '' : 's'}</div>
+            <div class="editor-field-row editor-segment-meta-row">
+                <div class="editor-field">
+                    <label>Type</label>
+                    <select data-field="type">
+                        ${SEGMENT_TYPES.map(type => `<option value="${type}"${(selected.type ?? 'lecture') === type ? ' selected' : ''}>${type}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="editor-field editor-duration-part">
+                    <label for="duration-minutes">Minutes</label>
+                    <input id="duration-minutes" data-field="duration-minutes" type="number" min="0" step="1" value="${durationMinutes}" />
+                </div>
+                <div class="editor-field editor-duration-part">
+                    <label for="duration-seconds">Seconds</label>
+                    <input id="duration-seconds" data-field="duration-seconds" type="number" min="0" max="59" step="1" value="${durationSeconds}" />
+                </div>
+            </div>
+        </section>
+        <section class="editor-inspector-panel editor-inspector-panel-bottom" aria-label="Info element editor panel">
+            <div class="editor-inspector-panel-header">
+                <div>
+                    <h3>Info Element Editor</h3>
+                </div>
                 <button type="button" class="editor-btn" data-action="add-info-block">Add Info Block</button>
             </div>
-            <div class="editor-info-list">
-                ${infoMarkup}
+            <div class="editor-inspector-panel-body">
+                <div class="editor-field">
+                    <label>Segment Transcript</label>
+                    <textarea data-field="segment-transcript" rows="4" placeholder="Optional notes for the entire segment">${escapeHtml(selected.transcript ?? '')}</textarea>
+                </div>
+                <div class="editor-field">
+                    <label>Info Sections</label>
+                    <div class="editor-info-list">
+                        ${infoMarkup}
+                    </div>
+                </div>
+                <div class="editor-field">
+                    <label>Validation</label>
+                    <ul class="editor-validation-list">
+                        <li>${selected.title.trim().length > 0 ? 'OK' : 'Missing title'}</li>
+                        <li>${selected.duration > 0 ? 'OK' : 'Duration must be greater than 0'}</li>
+                    </ul>
+                </div>
             </div>
-        </div>
-        <div class="editor-field">
-            <label>Transcript Blocks</label>
-            <div class="editor-readonly-box">${transcriptCount + segmentTranscriptCount} block${transcriptCount + segmentTranscriptCount === 1 ? '' : 's'}</div>
-        </div>
-        <div class="editor-field">
-            <label>Validation</label>
-            <ul class="editor-validation-list">
-                <li>${selected.title.trim().length > 0 ? 'OK' : 'Missing title'}</li>
-                <li>${selected.duration > 0 ? 'OK' : 'Duration must be greater than 0'}</li>
-            </ul>
-        </div>
+        </section>
     `;
 }
 
@@ -327,10 +338,27 @@ function handleInspectorInput(event: Event): void {
         if (SEGMENT_TYPES.includes(target.value as NonNullable<Segment['type']>)) {
             selected.type = target.value as NonNullable<Segment['type']>;
         }
-    } else if (field === 'duration' && target instanceof HTMLInputElement) {
-        const duration = Number.parseInt(target.value, 10);
-        if (!Number.isNaN(duration) && duration > 0) {
-            selected.duration = duration;
+    } else if ((field === 'duration-minutes' || field === 'duration-seconds') && target instanceof HTMLInputElement) {
+        const minutesInput = elInspector?.querySelector('input[data-field="duration-minutes"]') as HTMLInputElement | null;
+        const secondsInput = elInspector?.querySelector('input[data-field="duration-seconds"]') as HTMLInputElement | null;
+
+        if (minutesInput && secondsInput) {
+            const minutesRaw = Number.parseInt(minutesInput.value, 10);
+            const secondsRaw = Number.parseInt(secondsInput.value, 10);
+
+            if (!Number.isNaN(minutesRaw) && !Number.isNaN(secondsRaw)) {
+                const minutes = Math.max(0, minutesRaw);
+                const seconds = Math.min(59, Math.max(0, secondsRaw));
+
+                if (seconds !== secondsRaw) {
+                    secondsInput.value = String(seconds);
+                }
+
+                const duration = minutes * 60 + seconds;
+                if (duration > 0) {
+                    selected.duration = duration;
+                }
+            }
         }
     } else if (field === 'segment-transcript' && target instanceof HTMLTextAreaElement) {
         selected.transcript = target.value;
