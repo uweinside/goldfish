@@ -11,7 +11,7 @@
         <header class="editor-header">
             <div class="editor-title-group">
                 <p class="editor-eyebrow">Course Editor</p>
-                <h1 id="editor-course-title">Loading course...</h1>
+                <h1 id="editor-course-title" contenteditable="true" spellcheck="false" aria-label="Course title (click to edit)">Loading course...</h1>
             </div>
             <div class="editor-header-meta">
                 <span id="editor-total-segments">-- segments</span>
@@ -26,8 +26,7 @@
                 <div class="editor-panel-header">
                     <h2>Chapters</h2>
                     <div class="editor-panel-actions" aria-label="Chapters quick actions">
-                        <button type="button" class="editor-btn" disabled>+ Add Segment</button>
-                        <button type="button" class="editor-btn" disabled>+ Add Break</button>
+                        <button type="button" class="editor-btn" id="editor-add-chapter-btn">+ Add Chapter</button>
                     </div>
                 </div>
                 <div id="editor-segment-list" class="editor-segment-list"></div>
@@ -71,9 +70,9 @@
             ></div>
 
             <!-- RIGHT PANEL: Info Section Editor -->
-            <aside id="editor-info-editor" class="editor-panel editor-info-editor" aria-label="Edit selected info section">
+                <aside id="editor-info-editor" class="editor-panel editor-info-editor" aria-label="Edit selected item">
                 <div class="editor-panel-header">
-                    <h2>Edit Info Section</h2>
+                    <h2>Edit</h2>
                     <div class="editor-panel-actions editor-panel-actions-placeholder" aria-hidden="true">
                         <button type="button" class="editor-btn" tabindex="-1">+ Add Section</button>
                     </div>

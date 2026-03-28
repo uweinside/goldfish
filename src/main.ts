@@ -122,15 +122,19 @@ async function init(): Promise<void> {
 
         const notesSection = target.closest('.info-section-notes-enabled') as HTMLElement | null;
         if (notesSection) {
-            const sectionIndex = Number(notesSection.dataset.notesSectionIndex);
-            if (!Number.isNaN(sectionIndex)) {
-                openNotesPanel(sectionIndex);
-                return;
-            }
+            openNotesPanel();
+            return;
         }
 
         if (target.closest('#outline-view-transcript')) {
-            openNotesPanel();
+            const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+            const section = chapter.sections[goldfishState.currentSectionIndex];
+            const hasCurrentTranscript = typeof section.transcript === 'string' && section.transcript.trim().length > 0;
+            if (hasCurrentTranscript) {
+                openNotesPanel();
+            } else {
+                advanceNotesSection(timeline);
+            }
             return;
         }
 

@@ -164,13 +164,13 @@ function renderMarkdown(markdown: string): string {
     return htmlParts.join('');
 }
 
-function renderInfoPanel(section: Section): void {
+function renderInfoPanel(section: Section, canOpenTranscriptMode: boolean): void {
     const transcriptAvailable = typeof section.transcript === 'string' && section.transcript.trim().length > 0;
 
     elPanelRightHeader.innerHTML = `
         <div class="notes-top-row">
             <span class="notes-mode-label">Outline View</span>
-            ${transcriptAvailable ? '<button id="outline-view-transcript" class="outline-view-transcript-btn" type="button" aria-label="Switch to Transcript View"><span>Transcript</span><span aria-hidden="true">&rarr;</span></button>' : ''}
+            ${canOpenTranscriptMode ? '<button id="outline-view-transcript" class="outline-view-transcript-btn" type="button" aria-label="Switch to Transcript View"><span>Transcript</span><span aria-hidden="true">&rarr;</span></button>' : ''}
         </div>
     `;
 
@@ -338,12 +338,15 @@ export function render(timeline: Timeline, state: AppState): void {
     }
 
     const hasTranscript = typeof section.transcript === 'string' && section.transcript.trim().length > 0;
-    elRightPanel?.classList.toggle('panel-notes-available', hasTranscript || state.rightPanelMode === 'notes');
+    const hasAnyTranscript = timeline.chapters.some(chapter =>
+        chapter.sections.some(s => typeof s.transcript === 'string' && s.transcript.trim().length > 0),
+    );
+    elRightPanel?.classList.toggle('panel-notes-available', hasAnyTranscript || state.rightPanelMode === 'notes');
     elRightPanel?.classList.toggle('panel-notes-open', state.rightPanelMode === 'notes');
 
     if (state.rightPanelMode === 'notes') {
         renderNotesPanel(timeline, state, section);
     } else {
-        renderInfoPanel(section);
+        renderInfoPanel(section, hasAnyTranscript);
     }
 }

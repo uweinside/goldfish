@@ -1,4 +1,7 @@
 import { listCourses, CourseEntry } from './core/data-loader.js';
+import { listLocalCourses, saveCourseDocument } from './core/course-authoring-api.js';
+import { CourseSummary } from './models/course-authoring.js';
+import { Timeline } from './models/types.js';
 
 const PAGE_SIZE = 6;
 let allCourses: CourseEntry[] = [];
@@ -140,7 +143,176 @@ function renderError(message: string): void {
     grid.classList.add('grid-loaded');
 }
 
+function slugifyCourseId(title: string): string {
+    return title
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 80) || 'course';
+}
+
+function renderLocalCourses(summaries: CourseSummary[]): void {
+    const section = document.getElementById('local-courses-section') as HTMLElement | null;
+    const grid = document.getElementById('local-course-grid') as HTMLElement | null;
+    const githubLabel = document.getElementById('github-courses-label') as HTMLElement | null;
+    if (!section || !grid) return;
+
+    section.hidden = false;
+    if (githubLabel) githubLabel.hidden = false;
+
+    if (summaries.length === 0) {
+        grid.innerHTML = '<div class="course-empty">No local courses yet. Create one to get started.</div>';
+        return;
+    }
+
+    grid.innerHTML = '';
+    for (const summary of summaries) {
+        const title = summary.title || summary.id.toUpperCase();
+        const timerHref = `timer.html?course=${encodeURIComponent(summary.id)}`;
+        const editorHref = `editor.html?course=${encodeURIComponent(summary.id)}`;
+
+        const card = document.createElement('article');
+        card.className = 'course-card';
+
+        const primaryLink = document.createElement('a');
+        primaryLink.href = editorHref;
+        primaryLink.className = 'course-card-main';
+        primaryLink.setAttribute('aria-label', `Edit course ${title}`);
+        primaryLink.innerHTML = `
+            <span class="course-code">${summary.id.toUpperCase()}</span>
+            <span class="course-title">${title}</span>
+            <span class="course-meta">${summary.chapter_count} chapters · ${summary.section_count} sections · ${formatDuration(summary.total_duration)}</span>
+        `;
+
+        const actions = document.createElement('div');
+        actions.className = 'course-card-actions';
+
+        const runLink = document.createElement('a');
+        runLink.href = timerHref;
+        runLink.className = 'course-card-action';
+        runLink.textContent = 'Run';
+        runLink.setAttribute('aria-label', `Run course ${title}`);
+
+        const editLink = document.createElement('a');
+        editLink.href = editorHref;
+        editLink.className = 'course-card-action course-card-action-edit';
+        editLink.textContent = 'Edit';
+        editLink.setAttribute('aria-label', `Edit course ${title}`);
+
+        actions.append(runLink, editLink);
+        card.append(primaryLink, actions);
+        grid.appendChild(card);
+    }
+}
+
+function showNewCourseDialog(): void {
+    const overlay = document.createElement('div');
+    overlay.className = 'new-course-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'New Course');
+    overlay.innerHTML = `
+        <div class="new-course-dialog">
+            <h2 class="new-course-heading">New Course</h2>
+            <div class="new-course-field">
+                <label for="new-course-title" class="new-course-label">Course Title</label>
+                <input
+                    id="new-course-title"
+                    class="new-course-input"
+                    type="text"
+                    placeholder="e.g. GitHub Copilot Fundamentals"
+                    maxlength="200"
+                    autocomplete="off"
+                />
+            </div>
+            <div class="new-course-error" id="new-course-error" hidden></div>
+            <div class="new-course-actions">
+                <button type="button" id="new-course-cancel" class="editor-btn">Cancel</button>
+                <button type="button" id="new-course-create" class="editor-btn editor-btn-primary" disabled>Create</button>
+            </div>
+        </div>
+    `;
+
+    const input = overlay.querySelector('#new-course-title') as HTMLInputElement;
+    const createBtn = overlay.querySelector('#new-course-create') as HTMLButtonElement;
+    const cancelBtn = overlay.querySelector('#new-course-cancel') as HTMLButtonElement;
+    const errorEl = overlay.querySelector('#new-course-error') as HTMLElement;
+
+    const close = (): void => {
+        document.removeEventListener('keydown', onKeyDown);
+        overlay.remove();
+    };
+
+    input.addEventListener('input', () => {
+        createBtn.disabled = input.value.trim().length === 0;
+        errorEl.hidden = true;
+    });
+
+    const onCreate = async (): Promise<void> => {
+        const title = input.value.trim();
+        if (!title) return;
+
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating…';
+
+        const id = slugifyCourseId(title);
+        const initialTimeline: Timeline = {
+            title,
+            chapters: [{
+                title: 'Introduction',
+                sections: [{
+                    title: 'Overview',
+                    type: 'Narration',
+                    durationSeconds: 300,
+                    instructions: 'Add your instructions here.',
+                }],
+            }],
+        };
+
+        try {
+            await saveCourseDocument(id, initialTimeline);
+            window.location.href = `editor.html?course=${encodeURIComponent(id)}`;
+        } catch (err) {
+            console.error('Failed to create course:', err);
+            const message = err instanceof Error ? err.message : String(err);
+            errorEl.textContent = `Could not create course: ${message}`;
+            errorEl.hidden = false;
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create';
+        }
+    };
+
+    createBtn.addEventListener('click', onCreate);
+    cancelBtn.addEventListener('click', close);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !createBtn.disabled) {
+            onCreate();
+        }
+    });
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+    });
+
+    const onKeyDown = (e: KeyboardEvent): void => {
+        if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.body.appendChild(overlay);
+    setTimeout(() => input.focus(), 50);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('new-course-btn')?.addEventListener('click', showNewCourseDialog);
+
+    // Load local courses (Tauri only — silently skipped in browser context)
+    try {
+        const localCourses = await listLocalCourses();
+        renderLocalCourses(localCourses);
+    } catch {
+        // Not running in Tauri context, or no local courses — section stays hidden
+    }
+
     try {
         const courses = await listCourses();
         renderCourseGrid(courses);

@@ -1,5 +1,5 @@
-import { loadCourse } from './core/data-loader.js';
 import { Chapter, Section, SectionType, Timeline } from './models/types.js';
+import { loadLocalCourse, saveCourseDocument } from './core/course-authoring-api.js';
 
 interface EditorViewState {
     selectedChapterIndex: number;
@@ -18,6 +18,7 @@ const elEditorContent = document.querySelector('.editor-content') as HTMLElement
 const elDivider1 = document.getElementById('editor-divider-1') as HTMLElement | null;
 const elDivider2 = document.getElementById('editor-divider-2') as HTMLElement | null;
 const elAddSectionBtn = document.getElementById('editor-add-info-btn') as HTMLButtonElement | null;
+const elAddChapterBtn = document.getElementById('editor-add-chapter-btn') as HTMLButtonElement | null;
 
 const state: EditorViewState = {
     selectedChapterIndex: 0,
@@ -434,7 +435,7 @@ function renderSectionEditor(timeline: Timeline): void {
 
     const section = getSelectedSection();
     if (!section || state.selectedSectionIndex === null) {
-        elSectionEditor.innerHTML = '<div class="editor-info-editor-empty">Select a section to edit it.</div>';
+        renderChapterEditor(timeline);
         return;
     }
 
@@ -478,6 +479,36 @@ function renderSectionEditor(timeline: Timeline): void {
                         <button type="button" class="editor-expand-btn" data-action="expand-markdown" data-field="section-transcript">Expand</button>
                     </div>
                     <textarea id="section-transcript-${index}" data-field="section-transcript" rows="6">${escapeHtml(section.transcript ?? '')}</textarea>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderChapterEditor(timeline: Timeline): void {
+    if (!elSectionEditor) return;
+
+    const chapter = getSelectedChapter();
+    if (!chapter) {
+        elSectionEditor.innerHTML = '<div class="editor-info-editor-empty">Select a chapter to view its details.</div>';
+        return;
+    }
+
+    elSectionEditor.innerHTML = `
+        <div class="editor-info-editor-form">
+            <div class="editor-info-editor-panel">
+                <div class="editor-field">
+                    <label for="chapter-title">Chapter Title</label>
+                    <input
+                        id="chapter-title"
+                        data-field="chapter-title"
+                        type="text"
+                        value="${escapeHtml(chapter.title)}"
+                        placeholder="Chapter title"
+                    />
+                </div>
+                <div class="editor-chapter-meta">
+                    <span class="editor-chapter-meta-pill">${formatMinutesSeconds(chapterDuration(chapter))} · ${chapter.sections.length} section${chapter.sections.length === 1 ? '' : 's'}</span>
                 </div>
             </div>
         </div>
@@ -564,7 +595,7 @@ function openMarkdownEditor(field: 'section-instructions' | 'section-transcript'
 }
 
 function render(timeline: Timeline): void {
-    if (elCourseTitle) {
+    if (elCourseTitle && document.activeElement !== elCourseTitle) {
         elCourseTitle.textContent = timeline.title || 'Untitled Course';
     }
 
@@ -591,13 +622,27 @@ function handleEditorInput(event: Event): void {
         return;
     }
 
-    const section = getSelectedSection();
     const timeline = state.timeline;
-    if (!section || !timeline) {
+    if (!timeline) {
         return;
     }
 
     const field = target.dataset.field;
+
+    if (field === 'chapter-title' && target instanceof HTMLInputElement) {
+        const chapter = getSelectedChapter();
+        if (chapter) {
+            chapter.title = target.value;
+            saveCourse();
+            renderChapterList(timeline);
+        }
+        return;
+    }
+
+    const section = getSelectedSection();
+    if (!section) {
+        return;
+    }
 
     if (field === 'section-type' && target instanceof HTMLSelectElement) {
         if (SECTION_TYPE_OPTIONS.includes(target.value as SectionType)) {
@@ -666,8 +711,7 @@ function addSection(): void {
         title: 'New Section',
         type: 'Narration',
         durationSeconds: 300,
-        instructions: '',
-        transcript: '',
+        instructions: 'Add your instructions here.',
     };
 
     chapter.sections.push(nextSection);
@@ -694,6 +738,27 @@ function removeSection(index: number): void {
     }
 
     saveCourse();
+}
+
+function addChapter(): void {
+    const timeline = state.timeline;
+    if (!timeline) {
+        return;
+    }
+
+    timeline.chapters.push({
+        title: 'New Chapter',
+        sections: [{
+            title: 'New Section',
+            type: 'Narration',
+            durationSeconds: 300,
+            instructions: 'Add your instructions here.',
+        }],
+    });
+    state.selectedChapterIndex = timeline.chapters.length - 1;
+    state.selectedSectionIndex = null;
+    saveCourse();
+    render(timeline);
 }
 
 function handleEditorClick(event: MouseEvent): void {
@@ -732,14 +797,7 @@ async function saveCourse(): Promise<void> {
     }
 
     try {
-        const response = await fetch('/api/courses', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ courseId, timeline: state.timeline }),
-        });
-        if (!response.ok) {
-            console.error('Failed to save course');
-        }
+        await saveCourseDocument(courseId, state.timeline);
     } catch (err) {
         console.error('Error saving course:', err);
     }
@@ -757,20 +815,18 @@ function ensureValidTimeline(timeline: Timeline): Timeline {
                 title: 'Section 1',
                 type: 'Narration',
                 durationSeconds: 300,
-                instructions: '',
-                transcript: '',
+                instructions: 'Add your instructions here.',
             }],
         }];
     }
 
-    for (const chapter of timeline.chapters) {
+        for (const chapter of timeline.chapters) {
         if (!Array.isArray(chapter.sections) || chapter.sections.length === 0) {
             chapter.sections = [{
                 title: 'Section 1',
                 type: 'Narration',
                 durationSeconds: 300,
-                instructions: '',
-                transcript: '',
+                instructions: 'Add your instructions here.',
             }];
         }
     }
@@ -791,7 +847,7 @@ async function init(): Promise<void> {
 
     let timeline: Timeline;
     try {
-        timeline = ensureValidTimeline(await loadCourse(courseId));
+        timeline = await loadLocalCourse(courseId);
     } catch {
         window.location.href = '/';
         return;
@@ -801,15 +857,34 @@ async function init(): Promise<void> {
 
     setupEditorDividers();
 
+    if (elCourseTitle) {
+        elCourseTitle.addEventListener('blur', () => {
+            if (!state.timeline) return;
+            const newTitle = elCourseTitle.textContent?.trim() ?? '';
+            state.timeline.title = newTitle || 'Untitled Course';
+            if (!newTitle) {
+                elCourseTitle.textContent = state.timeline.title;
+            }
+            saveCourse();
+        });
+        elCourseTitle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                elCourseTitle.blur();
+            }
+        });
+    }
+
     elSectionEditor?.addEventListener('input', handleEditorInput);
     elSectionEditor?.addEventListener('click', handleEditorClick);
     elAddSectionBtn?.addEventListener('click', addSection);
+    elAddChapterBtn?.addEventListener('click', addChapter);
 
     render(timeline);
 
     document.addEventListener('keydown', (event) => {
-        const activeTag = document.activeElement?.tagName;
-        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+        const activeEl = document.activeElement;
+        if (activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA' || activeEl?.tagName === 'SELECT' || (activeEl as HTMLElement | null)?.isContentEditable) {
             return;
         }
 

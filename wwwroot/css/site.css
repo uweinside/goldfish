@@ -2053,3 +2053,161 @@ body.editor-resizing {
     }
 }
 
+/* ── Contenteditable Course Title ── */
+
+#editor-course-title[contenteditable] {
+    cursor: text;
+    border-radius: 6px;
+    padding: 0.1em 0.3em;
+    margin: -0.1em -0.3em;
+    outline: none;
+    transition: background 0.15s ease;
+}
+
+#editor-course-title[contenteditable]:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+#editor-course-title[contenteditable]:focus {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+/* ── Chapter Editor Panel ── */
+
+.editor-chapter-meta {
+    margin-top: 0.75rem;
+}
+
+.editor-chapter-meta-pill {
+    display: inline-block;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* ── Local Courses Section (Start Page) ── */
+
+.local-courses-section {
+    width: 100%;
+    max-width: 64rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.local-courses-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.local-courses-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.start-section-label {
+    width: 100%;
+    max-width: 64rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+/* ── New Course Dialog ── */
+
+.new-course-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.new-course-dialog {
+    width: min(480px, 90vw);
+    border-radius: 20px;
+    background: #111;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.new-course-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.new-course-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.new-course-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+.new-course-input {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.new-course-input::placeholder {
+    color: var(--text-faint);
+}
+
+.new-course-input:focus {
+    border-color: rgba(245, 158, 11, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.new-course-error {
+    font-size: 0.85rem;
+    color: #fca5a5;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.new-course-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
