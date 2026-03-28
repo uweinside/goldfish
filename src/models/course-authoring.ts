@@ -3,7 +3,8 @@ import { Timeline } from './types.js';
 export interface CourseSummary {
   id: string;
   title?: string;
-  segment_count: number;
+  chapter_count: number;
+  section_count: number;
   total_duration: number;
 }
 

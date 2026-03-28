@@ -1737,6 +1737,10 @@ body.editor-resizing {
     line-height: 1.4;
 }
 
+.editor-info-editor-panel textarea {
+    resize: none;
+}
+
 .editor-field select {
     appearance: none;
     background-color: rgba(255, 255, 255, 0.025);

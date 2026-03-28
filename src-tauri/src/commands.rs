@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize)]
 pub struct CourseSummary {
   pub id: String,
-  pub title: Option<String>,
-  pub segment_count: usize,
+  pub title: String,
+  pub chapter_count: usize,
+  pub section_count: usize,
   pub total_duration: i64,
 }
 
@@ -60,12 +61,23 @@ pub fn list_local_courses() -> Result<Vec<CourseSummary>, String> {
       )
     })?;
 
-    let total_duration = document.segments.iter().map(|seg| seg.duration).sum();
+    let section_count = document
+      .chapters
+      .iter()
+      .map(|chapter| chapter.sections.len())
+      .sum();
+    let total_duration = document
+      .chapters
+      .iter()
+      .flat_map(|chapter| chapter.sections.iter())
+      .map(|section| section.duration_seconds)
+      .sum();
 
     summaries.push(CourseSummary {
       id,
       title: document.title,
-      segment_count: document.segments.len(),
+      chapter_count: document.chapters.len(),
+      section_count,
       total_duration,
     });
   }

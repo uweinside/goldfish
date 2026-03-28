@@ -1,29 +1,30 @@
-export interface InfoSection {
-    label: string;
-    items: string[];
-    transcript?: string[];
-}
+export type SectionType = 'Narration' | 'Demo' | 'Prompt' | 'Rule';
 
-export interface Segment {
+export interface Section {
     title: string;
-    duration: number; // seconds
-    type?: 'lecture' | 'demo' | 'break';
-    info?: InfoSection[];
+    type: SectionType;
+    durationSeconds: number;
+    instructions: string;
     transcript?: string;
 }
 
+export interface Chapter {
+    title: string;
+    sections: Section[];
+}
+
 export interface Timeline {
-    title?: string;
-    segments: Segment[];
+    title: string;
+    chapters: Chapter[];
 }
 
 export interface AppState {
-    currentSegmentIndex: number;
-    segmentStartTime: number; // Date.now() when segment effectively started (adjusted for pauses)
+    currentChapterIndex: number;
+    currentSectionIndex: number;
+    sectionStartTime: number; // Date.now() when section effectively started (adjusted for pauses)
     isPaused: boolean;
     pausedAt?: number; // Date.now() when paused
     hasStarted: boolean; // true once the user starts the timer for the first time
     sessionEndTime: number; // fixed wall-clock endpoint (shifts forward on pause/resume)
     rightPanelMode: 'info' | 'notes';
-    notesSectionIndex?: number;
 }

@@ -130,15 +130,7 @@ async function init(): Promise<void> {
         }
 
         if (target.closest('#outline-view-transcript')) {
-            const seg = timeline.segments[goldfishState.currentSegmentIndex];
-            const firstIdx = seg.info?.findIndex(section =>
-                Array.isArray(section.transcript) && section.transcript.some(block => typeof block === 'string' && block.trim().length > 0),
-            ) ?? -1;
-            if (firstIdx >= 0) {
-                openNotesPanel(firstIdx);
-            } else {
-                openNotesPanel();
-            }
+            openNotesPanel();
             return;
         }
 
@@ -146,17 +138,9 @@ async function init(): Promise<void> {
             return;
         }
 
-        const segment = timeline.segments[goldfishState.currentSegmentIndex];
-        const firstSectionWithNotes = segment.info?.findIndex(section =>
-            Array.isArray(section.transcript) && section.transcript.some(block => typeof block === 'string' && block.trim().length > 0),
-        ) ?? -1;
-
-        if (firstSectionWithNotes >= 0) {
-            openNotesPanel(firstSectionWithNotes);
-            return;
-        }
-
-        if (typeof segment.transcript === 'string' && segment.transcript.trim().length > 0) {
+        const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+        const section = chapter.sections[goldfishState.currentSectionIndex];
+        if (typeof section.transcript === 'string' && section.transcript.trim().length > 0) {
             openNotesPanel();
         }
     });
@@ -177,11 +161,8 @@ async function init(): Promise<void> {
             return;
         }
 
-        const sectionIndex = Number(notesSection.dataset.notesSectionIndex);
-        if (!Number.isNaN(sectionIndex)) {
-            keyboardEvent.preventDefault();
-            openNotesPanel(sectionIndex);
-        }
+        keyboardEvent.preventDefault();
+        openNotesPanel();
     });
 
     tick(); // render immediately before first interval

@@ -1,37 +1,38 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum SegmentType {
-  Lecture,
+#[serde(rename_all = "PascalCase")]
+pub enum SectionType {
+  Narration,
   Demo,
-  Break,
+  Prompt,
+  Rule,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct InfoSection {
-  pub label: String,
-  pub items: Vec<String>,
-  pub transcript: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Segment {
+pub struct Section {
   pub title: String,
-  pub duration: i64,
   #[serde(rename = "type")]
-  pub segment_type: Option<SegmentType>,
-  pub info: Option<Vec<InfoSection>>,
+  pub section_type: SectionType,
+  #[serde(rename = "durationSeconds")]
+  pub duration_seconds: i64,
+  pub instructions: String,
   pub transcript: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct Chapter {
+  pub title: String,
+  pub sections: Vec<Section>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Timeline {
-  pub title: Option<String>,
-  pub segments: Vec<Segment>,
+  pub title: String,
+  pub chapters: Vec<Chapter>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -50,85 +51,71 @@ fn err(path: &str, code: &str, message: &str) -> ValidationError {
 }
 
 pub fn validate_timeline_strict(document: &Timeline) -> Result<(), ValidationError> {
-  if let Some(title) = &document.title {
-    if title.trim().is_empty() {
-      return Err(err("title", "EMPTY_TITLE", "title cannot be empty when provided"));
-    }
+  if document.title.trim().is_empty() {
+    return Err(err("title", "EMPTY_TITLE", "title cannot be empty"));
   }
 
-  if document.segments.is_empty() {
-    return Err(err("segments", "EMPTY_SEGMENTS", "segments must contain at least one segment"));
+  if document.chapters.is_empty() {
+    return Err(err(
+      "chapters",
+      "EMPTY_CHAPTERS",
+      "chapters must contain at least one chapter",
+    ));
   }
 
-  for (segment_index, segment) in document.segments.iter().enumerate() {
-    let segment_path = format!("segments[{segment_index}]");
+  for (chapter_index, chapter) in document.chapters.iter().enumerate() {
+    let chapter_path = format!("chapters[{chapter_index}]");
 
-    if segment.title.trim().is_empty() {
+    if chapter.title.trim().is_empty() {
       return Err(err(
-        &format!("{segment_path}.title"),
-        "EMPTY_SEGMENT_TITLE",
-        "segment title cannot be empty",
+        &format!("{chapter_path}.title"),
+        "EMPTY_CHAPTER_TITLE",
+        "chapter title cannot be empty",
       ));
     }
 
-    if segment.duration <= 0 {
+    if chapter.sections.is_empty() {
       return Err(err(
-        &format!("{segment_path}.duration"),
-        "INVALID_SEGMENT_DURATION",
-        "segment duration must be greater than zero seconds",
+        &format!("{chapter_path}.sections"),
+        "EMPTY_SECTIONS",
+        "chapter must include at least one section",
       ));
     }
 
-    if let Some(transcript) = &segment.transcript {
-      if transcript.trim().is_empty() {
+    for (section_index, section) in chapter.sections.iter().enumerate() {
+      let section_path = format!("{chapter_path}.sections[{section_index}]");
+
+      if section.title.trim().is_empty() {
         return Err(err(
-          &format!("{segment_path}.transcript"),
-          "EMPTY_SEGMENT_TRANSCRIPT",
-          "segment transcript cannot be empty when provided",
+          &format!("{section_path}.title"),
+          "EMPTY_SECTION_TITLE",
+          "section title cannot be empty",
         ));
       }
-    }
 
-    if let Some(info_sections) = &segment.info {
-      for (section_index, section) in info_sections.iter().enumerate() {
-        let section_path = format!("{segment_path}.info[{section_index}]");
+      if section.duration_seconds <= 0 {
+        return Err(err(
+          &format!("{section_path}.durationSeconds"),
+          "INVALID_SECTION_DURATION",
+          "section duration must be greater than zero seconds",
+        ));
+      }
 
-        if section.label.trim().is_empty() {
+      if section.instructions.trim().is_empty() {
+        return Err(err(
+          &format!("{section_path}.instructions"),
+          "EMPTY_SECTION_INSTRUCTIONS",
+          "section instructions cannot be empty",
+        ));
+      }
+
+      if let Some(transcript) = &section.transcript {
+        if transcript.trim().is_empty() {
           return Err(err(
-            &format!("{section_path}.label"),
-            "EMPTY_INFO_LABEL",
-            "info section label cannot be empty",
+            &format!("{section_path}.transcript"),
+            "EMPTY_SECTION_TRANSCRIPT",
+            "section transcript cannot be empty when provided",
           ));
-        }
-
-        if section.items.is_empty() {
-          return Err(err(
-            &format!("{section_path}.items"),
-            "EMPTY_INFO_ITEMS",
-            "info section must include at least one item",
-          ));
-        }
-
-        for (item_index, item) in section.items.iter().enumerate() {
-          if item.trim().is_empty() {
-            return Err(err(
-              &format!("{section_path}.items[{item_index}]"),
-              "EMPTY_INFO_ITEM",
-              "info item cannot be empty",
-            ));
-          }
-        }
-
-        if let Some(lines) = &section.transcript {
-          for (line_index, line) in lines.iter().enumerate() {
-            if line.trim().is_empty() {
-              return Err(err(
-                &format!("{section_path}.transcript[{line_index}]"),
-                "EMPTY_SECTION_TRANSCRIPT_LINE",
-                "section transcript lines cannot be empty",
-              ));
-            }
-          }
         }
       }
     }
@@ -139,21 +126,20 @@ pub fn validate_timeline_strict(document: &Timeline) -> Result<(), ValidationErr
 
 #[cfg(test)]
 mod tests {
-  use super::{validate_timeline_strict, InfoSection, Segment, SegmentType, Timeline};
+  use super::{validate_timeline_strict, Chapter, Section, SectionType, Timeline};
 
   fn valid_timeline() -> Timeline {
     Timeline {
-      title: Some("Sample".to_string()),
-      segments: vec![Segment {
+      title: "Sample".to_string(),
+      chapters: vec![Chapter {
         title: "Welcome".to_string(),
-        duration: 300,
-        segment_type: Some(SegmentType::Lecture),
-        info: Some(vec![InfoSection {
-          label: "focus".to_string(),
-          items: vec!["Set expectations".to_string()],
-          transcript: Some(vec!["Notes".to_string()]),
-        }]),
-        transcript: Some("Segment notes".to_string()),
+        sections: vec![Section {
+          title: "Intro".to_string(),
+          section_type: SectionType::Narration,
+          duration_seconds: 300,
+          instructions: "Set expectations".to_string(),
+          transcript: Some("Welcome everyone".to_string()),
+        }],
       }],
     }
   }
@@ -165,22 +151,22 @@ mod tests {
   }
 
   #[test]
-  fn validate_rejects_empty_segments() {
+  fn validate_rejects_empty_chapters() {
     let timeline = Timeline {
-      title: Some("Empty".to_string()),
-      segments: vec![],
+      title: "Empty".to_string(),
+      chapters: vec![],
     };
 
     let err = validate_timeline_strict(&timeline).expect_err("expected validation error");
-    assert_eq!(err.code, "EMPTY_SEGMENTS");
+    assert_eq!(err.code, "EMPTY_CHAPTERS");
   }
 
   #[test]
-  fn validate_rejects_empty_item() {
+  fn validate_rejects_empty_instructions() {
     let mut timeline = valid_timeline();
-    timeline.segments[0].info.as_mut().expect("has info")[0].items[0] = "   ".to_string();
+    timeline.chapters[0].sections[0].instructions = "   ".to_string();
 
     let err = validate_timeline_strict(&timeline).expect_err("expected validation error");
-    assert_eq!(err.code, "EMPTY_INFO_ITEM");
+    assert_eq!(err.code, "EMPTY_SECTION_INSTRUCTIONS");
   }
 }

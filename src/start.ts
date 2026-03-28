@@ -30,9 +30,12 @@ function renderPage(page: number): void {
 
     for (const course of pageCourses) {
         const { id, data } = course;
-        const title = data.title ?? id.toUpperCase();
-        const segmentCount = data.segments.length;
-        const totalDuration = data.segments.reduce((sum, s) => sum + s.duration, 0);
+        const title = data.title || id.toUpperCase();
+        const chapterCount = data.chapters.length;
+        const sectionCount = data.chapters.reduce((sum, chapter) => sum + chapter.sections.length, 0);
+        const totalDuration = data.chapters
+            .flatMap(chapter => chapter.sections)
+            .reduce((sum, section) => sum + section.durationSeconds, 0);
         const timerHref = `timer.html?course=${encodeURIComponent(id)}`;
         const editorHref = `editor.html?course=${encodeURIComponent(id)}`;
 
@@ -46,7 +49,7 @@ function renderPage(page: number): void {
         primaryLink.innerHTML = `
             <span class="course-code">${id.toUpperCase()}</span>
             <span class="course-title">${title}</span>
-            <span class="course-meta">${segmentCount} segments · ${formatDuration(totalDuration)}</span>
+            <span class="course-meta">${chapterCount} chapters · ${sectionCount} sections · ${formatDuration(totalDuration)}</span>
         `;
 
         const actions = document.createElement('div');

@@ -1,130 +1,118 @@
 import { Timeline, AppState } from '../models/types.js';
 
 export const goldfishState: AppState = {
-    currentSegmentIndex: 0,
-    segmentStartTime: Date.now(),
+    currentChapterIndex: 0,
+    currentSectionIndex: 0,
+    sectionStartTime: Date.now(),
     isPaused: true,
     pausedAt: Date.now(),
     hasStarted: false,
     sessionEndTime: 0,
     rightPanelMode: 'info',
-    notesSectionIndex: undefined,
 };
+
+interface TimelinePosition {
+    chapterIndex: number;
+    sectionIndex: number;
+}
+
+function flattenPositions(timeline: Timeline): TimelinePosition[] {
+    const positions: TimelinePosition[] = [];
+    for (let chapterIndex = 0; chapterIndex < timeline.chapters.length; chapterIndex++) {
+        const chapter = timeline.chapters[chapterIndex];
+        for (let sectionIndex = 0; sectionIndex < chapter.sections.length; sectionIndex++) {
+            positions.push({ chapterIndex, sectionIndex });
+        }
+    }
+    return positions;
+}
+
+function currentFlatIndex(timeline: Timeline): number {
+    const positions = flattenPositions(timeline);
+    return positions.findIndex(
+        p => p.chapterIndex === goldfishState.currentChapterIndex && p.sectionIndex === goldfishState.currentSectionIndex,
+    );
+}
 
 function initSessionEndTime(timeline: Timeline): void {
     if (!goldfishState.hasStarted) {
-        const totalMs = timeline.segments.reduce((s, seg) => s + seg.duration, 0) * 1000;
+        const totalMs = timeline.chapters
+            .flatMap(chapter => chapter.sections)
+            .reduce((s, section) => s + section.durationSeconds, 0) * 1000;
         goldfishState.sessionEndTime = Date.now() + totalMs;
     }
 }
 
+function moveToPosition(position: TimelinePosition, timeline: Timeline): void {
+    initSessionEndTime(timeline);
+    goldfishState.currentChapterIndex = position.chapterIndex;
+    goldfishState.currentSectionIndex = position.sectionIndex;
+    goldfishState.sectionStartTime = Date.now();
+    goldfishState.isPaused = false;
+    goldfishState.pausedAt = undefined;
+    goldfishState.hasStarted = true;
+    goldfishState.rightPanelMode = 'info';
+}
+
 export function advanceSegment(timeline: Timeline): void {
-    if (goldfishState.currentSegmentIndex < timeline.segments.length - 1) {
-        initSessionEndTime(timeline);
-        goldfishState.currentSegmentIndex++;
-        goldfishState.segmentStartTime = Date.now();
-        goldfishState.isPaused = false;
-        goldfishState.pausedAt = undefined;
-        goldfishState.hasStarted = true;
-        goldfishState.rightPanelMode = 'info';
-        goldfishState.notesSectionIndex = undefined;
+    const positions = flattenPositions(timeline);
+    const current = currentFlatIndex(timeline);
+    if (current >= 0 && current < positions.length - 1) {
+        moveToPosition(positions[current + 1], timeline);
     }
 }
 
 export function previousSegment(timeline: Timeline): void {
-    if (goldfishState.currentSegmentIndex > 0) {
-        initSessionEndTime(timeline);
-        goldfishState.currentSegmentIndex--;
-        goldfishState.segmentStartTime = Date.now();
-        goldfishState.isPaused = false;
-        goldfishState.pausedAt = undefined;
-        goldfishState.hasStarted = true;
-        goldfishState.rightPanelMode = 'info';
-        goldfishState.notesSectionIndex = undefined;
+    const positions = flattenPositions(timeline);
+    const current = currentFlatIndex(timeline);
+    if (current > 0) {
+        moveToPosition(positions[current - 1], timeline);
     }
 }
 
-export function openNotesPanel(sectionIndex?: number): void {
+export function openNotesPanel(): void {
     goldfishState.rightPanelMode = 'notes';
-    goldfishState.notesSectionIndex = sectionIndex;
 }
 
 export function closeNotesPanel(): void {
     goldfishState.rightPanelMode = 'info';
-    goldfishState.notesSectionIndex = undefined;
 }
 
-function sectionHasNotes(segment: Timeline['segments'][number], index: number): boolean {
-    const notes = segment.info?.[index]?.transcript;
-    return Array.isArray(notes) && notes.some(b => typeof b === 'string' && b.trim().length > 0);
+function hasTranscript(section: Timeline['chapters'][number]['sections'][number]): boolean {
+    return typeof section.transcript === 'string' && section.transcript.trim().length > 0;
 }
 
 export function advanceNotesSection(timeline: Timeline): void {
-    const segment = timeline.segments[goldfishState.currentSegmentIndex];
-    const sectionCount = segment.info?.length ?? 0;
-    const currentIndex = goldfishState.notesSectionIndex;
-
-    // Try to find next section with notes within current segment
-    const searchFrom = currentIndex !== undefined ? currentIndex + 1 : 0;
-    for (let i = searchFrom; i < sectionCount; i++) {
-        if (sectionHasNotes(segment, i)) {
-            goldfishState.notesSectionIndex = i;
-            return;
-        }
+    const positions = flattenPositions(timeline);
+    const current = currentFlatIndex(timeline);
+    if (current < 0) {
+        return;
     }
 
-    // Cross into subsequent segments to find one with notes
-    for (let s = goldfishState.currentSegmentIndex + 1; s < timeline.segments.length; s++) {
-        const nextSeg = timeline.segments[s];
-        const firstWithNotes = nextSeg.info?.findIndex((_sec, idx) => sectionHasNotes(nextSeg, idx)) ?? -1;
-        const hasSegNotes = typeof nextSeg.transcript === 'string' && nextSeg.transcript.trim().length > 0;
-
-        if (firstWithNotes >= 0 || hasSegNotes) {
-            initSessionEndTime(timeline);
-            goldfishState.currentSegmentIndex = s;
-            goldfishState.segmentStartTime = Date.now();
-            goldfishState.isPaused = false;
-            goldfishState.pausedAt = undefined;
-            goldfishState.hasStarted = true;
+    for (let i = current + 1; i < positions.length; i++) {
+        const position = positions[i];
+        const section = timeline.chapters[position.chapterIndex].sections[position.sectionIndex];
+        if (hasTranscript(section)) {
+            moveToPosition(position, timeline);
             goldfishState.rightPanelMode = 'notes';
-            goldfishState.notesSectionIndex = firstWithNotes >= 0 ? firstWithNotes : undefined;
             return;
         }
     }
 }
 
 export function previousNotesSection(timeline: Timeline): void {
-    const segment = timeline.segments[goldfishState.currentSegmentIndex];
-    const currentIndex = goldfishState.notesSectionIndex;
-
-    // Try to find previous section with notes within current segment
-    const searchFrom = currentIndex !== undefined ? currentIndex - 1 : -1;
-    for (let i = searchFrom; i >= 0; i--) {
-        if (sectionHasNotes(segment, i)) {
-            goldfishState.notesSectionIndex = i;
-            return;
-        }
+    const positions = flattenPositions(timeline);
+    const current = currentFlatIndex(timeline);
+    if (current <= 0) {
+        return;
     }
 
-    // Cross into previous segments to find one with notes
-    for (let s = goldfishState.currentSegmentIndex - 1; s >= 0; s--) {
-        const prevSeg = timeline.segments[s];
-        const prevCount = prevSeg.info?.length ?? 0;
-        let lastWithNotes = -1;
-        for (let i = prevCount - 1; i >= 0; i--) {
-            if (sectionHasNotes(prevSeg, i)) { lastWithNotes = i; break; }
-        }
-        const hasSegNotes = typeof prevSeg.transcript === 'string' && prevSeg.transcript.trim().length > 0;
-
-        if (lastWithNotes >= 0 || hasSegNotes) {
-            initSessionEndTime(timeline);
-            goldfishState.currentSegmentIndex = s;
-            goldfishState.segmentStartTime = Date.now();
-            goldfishState.isPaused = false;
-            goldfishState.pausedAt = undefined;
-            goldfishState.hasStarted = true;
+    for (let i = current - 1; i >= 0; i--) {
+        const position = positions[i];
+        const section = timeline.chapters[position.chapterIndex].sections[position.sectionIndex];
+        if (hasTranscript(section)) {
+            moveToPosition(position, timeline);
             goldfishState.rightPanelMode = 'notes';
-            goldfishState.notesSectionIndex = lastWithNotes >= 0 ? lastWithNotes : undefined;
             return;
         }
     }
@@ -133,15 +121,13 @@ export function previousNotesSection(timeline: Timeline): void {
 export function pauseResume(timeline?: Timeline): void {
     if (goldfishState.isPaused) {
         if (!goldfishState.hasStarted) {
-            // First start: reset segment start time and anchor session end time
-            goldfishState.segmentStartTime = Date.now();
+            goldfishState.sectionStartTime = Date.now();
             if (timeline) {
                 initSessionEndTime(timeline);
             }
         } else {
-            // Resume: shift segmentStartTime and sessionEndTime forward by the paused duration
             const pauseDuration = Date.now() - (goldfishState.pausedAt ?? Date.now());
-            goldfishState.segmentStartTime += pauseDuration;
+            goldfishState.sectionStartTime += pauseDuration;
             goldfishState.sessionEndTime += pauseDuration;
         }
         goldfishState.isPaused = false;

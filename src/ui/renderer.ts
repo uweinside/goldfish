@@ -1,4 +1,4 @@
-import { Timeline, AppState } from '../models/types.js';
+import { Timeline, AppState, Section } from '../models/types.js';
 import { getSecondsRemaining, getSessionActualRemaining, getScheduleDrift, formatTime } from '../core/timer.js';
 
 const elTitle = document.getElementById('segment-title')!;
@@ -17,25 +17,41 @@ const elLeftPanel = document.querySelector('.panel-left') as HTMLElement | null;
 const elRightPanel = document.querySelector('.panel-right') as HTMLElement | null;
 
 const STATE_CLASSES = ['state-ok', 'state-warn', 'state-over'] as const;
-const TYPE_CLASSES = ['type-lecture', 'type-demo', 'type-break'] as const;
-let lastRenderedSegmentIndex = -1;
-let lastRightPanelRenderKey = '';
+let lastRenderKey = '';
 
-const SECTION_COLORS: Record<string, string> = {
-    focus: '#60A5FA',
-    objective: '#60A5FA',
-    talking: '#2DD4BF',
-    prompt: '#FBBF24',
-    demo: '#A78BFA',
-    rule: '#F87171',
-};
+interface TimelinePosition {
+    chapterIndex: number;
+    sectionIndex: number;
+}
 
-function getSectionColor(label: string): string {
-    const lower = label.toLowerCase();
-    for (const [keyword, color] of Object.entries(SECTION_COLORS)) {
-        if (lower.includes(keyword)) return color;
+function flattenPositions(timeline: Timeline): TimelinePosition[] {
+    const positions: TimelinePosition[] = [];
+    for (let chapterIndex = 0; chapterIndex < timeline.chapters.length; chapterIndex++) {
+        const chapter = timeline.chapters[chapterIndex];
+        for (let sectionIndex = 0; sectionIndex < chapter.sections.length; sectionIndex++) {
+            positions.push({ chapterIndex, sectionIndex });
+        }
     }
-    return '#6B7280';
+    return positions;
+}
+
+function getCurrentSection(timeline: Timeline, state: AppState): Section {
+    return timeline.chapters[state.currentChapterIndex].sections[state.currentSectionIndex];
+}
+
+function getCurrentChapterTitle(timeline: Timeline, state: AppState): string {
+    return timeline.chapters[state.currentChapterIndex].title;
+}
+
+function getNextPosition(timeline: Timeline, state: AppState): TimelinePosition | undefined {
+    const positions = flattenPositions(timeline);
+    const currentIndex = positions.findIndex(
+        p => p.chapterIndex === state.currentChapterIndex && p.sectionIndex === state.currentSectionIndex,
+    );
+    if (currentIndex < 0 || currentIndex >= positions.length - 1) {
+        return undefined;
+    }
+    return positions[currentIndex + 1];
 }
 
 function escapeHtml(text: string): string {
@@ -49,15 +65,13 @@ function escapeHtml(text: string): string {
 
 function formatInlineMarkdown(text: string): string {
     let output = escapeHtml(text);
-
     output = output.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     output = output.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     output = output.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
     return output;
 }
 
-function renderNotesMarkdown(markdown: string): string {
+function renderMarkdown(markdown: string): string {
     const lines = markdown.replace(/\r\n/g, '\n').split('\n');
     const htmlParts: string[] = [];
     let inUnorderedList = false;
@@ -146,111 +160,43 @@ function renderNotesMarkdown(markdown: string): string {
     if (inCodeBlock) {
         htmlParts.push(`<pre><code>${escapeHtml(codeBlockLines.join('\n'))}</code></pre>`);
     }
+
     return htmlParts.join('');
 }
 
-function hasSectionNotes(segment: Timeline['segments'][number], sectionIndex: number): boolean {
-    const notes = segment.info?.[sectionIndex]?.transcript;
-    return Array.isArray(notes) && notes.some(block => typeof block === 'string' && block.trim().length > 0);
-}
+function renderInfoPanel(section: Section): void {
+    const transcriptAvailable = typeof section.transcript === 'string' && section.transcript.trim().length > 0;
 
-function renderInfoPanel(segment: Timeline['segments'][number], hasNotes: boolean): void {
-    elInfoPanel.innerHTML = '';
-    elPanelRightHeader.innerHTML = '';
+    elPanelRightHeader.innerHTML = `
+        <div class="notes-top-row">
+            <span class="notes-mode-label">Outline View</span>
+            ${transcriptAvailable ? '<button id="outline-view-transcript" class="outline-view-transcript-btn" type="button" aria-label="Switch to Transcript View"><span>Transcript</span><span aria-hidden="true">&rarr;</span></button>' : ''}
+        </div>
+    `;
 
-    const topRow = document.createElement('div');
-    topRow.className = 'notes-top-row';
-    const modeLabel = document.createElement('span');
-    modeLabel.className = 'notes-mode-label';
-    modeLabel.textContent = 'Outline View';
-    topRow.appendChild(modeLabel);
-    if (hasNotes) {
-        const switchBtn = document.createElement('button');
-        switchBtn.id = 'outline-view-transcript';
-        switchBtn.className = 'outline-view-transcript-btn';
-        switchBtn.type = 'button';
-        switchBtn.setAttribute('aria-label', 'Switch to Transcript View');
-        switchBtn.innerHTML = '<span>Transcript</span><span aria-hidden="true">&rarr;</span>';
-        topRow.appendChild(switchBtn);
-    }
-    elPanelRightHeader.appendChild(topRow);
-
-    if (!segment.info || segment.info.length === 0) {
-        return;
-    }
-
-    for (let i = 0; i < segment.info.length; i++) {
-        const section = segment.info[i];
-        const sectionEl = document.createElement('div');
-        const priority = i === 0 ? 'info-section-primary' : i === 1 ? 'info-section-secondary' : 'info-section-tertiary';
-        sectionEl.className = `info-section ${priority}`;
-        sectionEl.style.setProperty('--section-accent', getSectionColor(section.label));
-
-        const sectionHasNotes = hasSectionNotes(segment, i);
-        if (sectionHasNotes) {
-            sectionEl.classList.add('info-section-notes-enabled');
-            sectionEl.dataset.notesSectionIndex = String(i);
-            sectionEl.setAttribute('role', 'button');
-            sectionEl.setAttribute('tabindex', '0');
-        }
-
-        const labelRow = document.createElement('div');
-        labelRow.className = 'info-label-row';
-
-        const labelEl = document.createElement('h3');
-        labelEl.className = 'info-label';
-        labelEl.textContent = section.label;
-        labelRow.appendChild(labelEl);
-
-        if (sectionHasNotes) {
-            const notesMarker = document.createElement('span');
-            notesMarker.className = 'notes-marker';
-            notesMarker.setAttribute('aria-hidden', 'true');
-            notesMarker.textContent = 'T';
-            labelRow.appendChild(notesMarker);
-        }
-
-        sectionEl.appendChild(labelRow);
-
-        const listEl = document.createElement('ul');
-        listEl.className = 'info-items';
-        for (const item of section.items) {
-            const li = document.createElement('li');
-            li.textContent = item;
-            listEl.appendChild(li);
-        }
-        sectionEl.appendChild(listEl);
-        elInfoPanel.appendChild(sectionEl);
-    }
-}
-
-interface NotesNavContext {
-    hasPrev: boolean;
-    hasNext: boolean;
-}
-
-function renderNotesNav(nav: NotesNavContext): string {
-    return `
-        <div class="notes-nav-row">
-            <button id="notes-prev" class="notes-nav-btn" type="button" aria-label="Previous section"${nav.hasPrev ? '' : ' disabled'}>
-                <span aria-hidden="true">&larr;</span>
-                <span>Prev</span>
-            </button>
-            <button id="notes-next" class="notes-nav-btn" type="button" aria-label="Next section"${nav.hasNext ? '' : ' disabled'}>
-                <span>Next</span>
-                <span aria-hidden="true">&rarr;</span>
-            </button>
+    elInfoPanel.innerHTML = `
+        <div class="info-section info-section-primary${transcriptAvailable ? ' info-section-notes-enabled' : ''}" ${transcriptAvailable ? 'data-notes-enabled="true" role="button" tabindex="0"' : ''}>
+            <div class="info-label-row">
+                <h3 class="info-label">${escapeHtml(section.title)}</h3>
+                ${transcriptAvailable ? '<span class="notes-marker" aria-hidden="true">T</span>' : ''}
+            </div>
+            <div class="notes-block">${renderMarkdown(section.instructions || '')}</div>
         </div>
     `;
 }
 
-function renderNotesPanel(segmentTitle: string, notesTitle: string, notesBlocks: string[], nav: NotesNavContext): void {
-    const safeSegmentTitle = escapeHtml(segmentTitle);
-    const safeNotesTitle = escapeHtml(notesTitle);
-    const renderedBlocks = notesBlocks
-        .filter(block => typeof block === 'string' && block.trim().length > 0)
-        .map(block => `<section class="notes-block">${renderNotesMarkdown(block.trim())}</section>`)
-        .join('');
+function renderNotesPanel(timeline: Timeline, state: AppState, section: Section): void {
+    const positions = flattenPositions(timeline);
+    const currentIndex = positions.findIndex(
+        p => p.chapterIndex === state.currentChapterIndex && p.sectionIndex === state.currentSectionIndex,
+    );
+
+    const hasPrev = positions.slice(0, Math.max(0, currentIndex)).some(
+        p => (timeline.chapters[p.chapterIndex].sections[p.sectionIndex].transcript || '').trim().length > 0,
+    );
+    const hasNext = positions.slice(currentIndex + 1).some(
+        p => (timeline.chapters[p.chapterIndex].sections[p.sectionIndex].transcript || '').trim().length > 0,
+    );
 
     elPanelRightHeader.innerHTML = `
         <div class="notes-top-row">
@@ -260,88 +206,72 @@ function renderNotesPanel(segmentTitle: string, notesTitle: string, notesBlocks:
                     <span aria-hidden="true">&larr;</span>
                     <span>Outline</span>
                 </button>
-                ${renderNotesNav(nav)}
+                <div class="notes-nav-row">
+                    <button id="notes-prev" class="notes-nav-btn" type="button" aria-label="Previous transcript section"${hasPrev ? '' : ' disabled'}>
+                        <span aria-hidden="true">&larr;</span>
+                        <span>Prev</span>
+                    </button>
+                    <button id="notes-next" class="notes-nav-btn" type="button" aria-label="Next transcript section"${hasNext ? '' : ' disabled'}>
+                        <span>Next</span>
+                        <span aria-hidden="true">&rarr;</span>
+                    </button>
+                </div>
             </div>
         </div>
     `;
+
+    const transcript = section.transcript && section.transcript.trim().length > 0
+        ? section.transcript
+        : 'No transcript available for this section.';
+
     elInfoPanel.innerHTML = `
         <div class="notes-view" aria-live="polite">
             <div class="notes-header">
                 <p class="notes-kicker">Transcript</p>
-                <h3>${safeSegmentTitle}</h3>
-                <p class="notes-subtitle">${safeNotesTitle}</p>
+                <h3>${escapeHtml(section.title)}</h3>
+                <p class="notes-subtitle">${escapeHtml(getCurrentChapterTitle(timeline, state))}</p>
             </div>
-            <div class="notes-content">${renderedBlocks}</div>
-        </div>
-    `;
-}
-
-function renderNotesPanelItems(segmentTitle: string, sectionLabel: string, items: string[], accentColor: string, nav: NotesNavContext): void {
-    const safeSegmentTitle = escapeHtml(segmentTitle);
-    const safeSectionLabel = escapeHtml(sectionLabel);
-    const listItems = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-
-    elPanelRightHeader.innerHTML = `
-        <div class="notes-top-row">
-            <span class="notes-mode-label">Transcript View</span>
-            <div class="notes-top-row-actions">
-                <button id="notes-back" class="notes-back-btn" type="button" aria-label="Back to Outline View">
-                    <span aria-hidden="true">&larr;</span>
-                    <span>Outline</span>
-                </button>
-                ${renderNotesNav(nav)}
+            <div class="notes-content">
+                <section class="notes-block">${renderMarkdown(transcript)}</section>
             </div>
-        </div>
-    `;
-    elInfoPanel.innerHTML = `
-        <div class="notes-view" aria-live="polite">
-            <div class="notes-header">
-                <p class="notes-kicker">Segment Info</p>
-                <h3>${safeSegmentTitle}</h3>
-                <p class="notes-subtitle">${safeSectionLabel}</p>
-            </div>
-            <section class="notes-block" style="--section-accent: ${accentColor}; border-left: 4px solid ${accentColor}">
-                <ul class="info-items">${listItems}</ul>
-            </section>
         </div>
     `;
 }
 
 export function render(timeline: Timeline, state: AppState): void {
-    const segment = timeline.segments[state.currentSegmentIndex];
-    const hasSegmentChanged = lastRenderedSegmentIndex !== -1 && lastRenderedSegmentIndex !== state.currentSegmentIndex;
-    if (hasSegmentChanged) {
+    const section = getCurrentSection(timeline, state);
+    const chapterTitle = getCurrentChapterTitle(timeline, state);
+    const nextPosition = getNextPosition(timeline, state);
+
+    const renderKey = [
+        state.currentChapterIndex,
+        state.currentSectionIndex,
+        state.rightPanelMode,
+    ].join('|');
+
+    if (renderKey !== lastRenderKey) {
         const panels: (HTMLElement | null)[] = [elLeftPanel, elRightPanel];
         for (const panel of panels) {
             if (!panel) continue;
             panel.classList.remove('panel-crossfade');
-            // Force reflow so repeated same-class animations restart.
             void panel.offsetWidth;
             panel.classList.add('panel-crossfade');
         }
+        lastRenderKey = renderKey;
     }
-    lastRenderedSegmentIndex = state.currentSegmentIndex;
 
-    const secondsRemaining = getSecondsRemaining(segment, state);
-    const nextIndex = state.currentSegmentIndex + 1;
-    const nextSegment = nextIndex < timeline.segments.length ? timeline.segments[nextIndex] : undefined;
-    const typeLabel = segment.type ? `${segment.type[0].toUpperCase()}${segment.type.slice(1)}` : 'Flow';
+    const secondsRemaining = getSecondsRemaining(section, state);
 
-    // Timer display
     elTimer.textContent = formatTime(secondsRemaining);
+    elTitle.textContent = section.title;
+    elSegmentBadgeText.textContent = section.type.slice(0, 1).toUpperCase();
 
-    // Segment title
-    elTitle.textContent = segment.title;
-    elSegmentBadgeText.textContent = (segment.type?.[0] ?? segment.title[0] ?? 'C').toUpperCase();
-
-    // Progress bar (0–100%, clamps at both ends; stays full during overtime)
-    const elapsed = (segment.duration - Math.max(secondsRemaining, 0)) / segment.duration;
+    const elapsed = (section.durationSeconds - Math.max(secondsRemaining, 0)) / section.durationSeconds;
     elProgressFill.style.width = `${Math.min(100, Math.max(0, elapsed * 100)).toFixed(2)}%`;
 
-    // Color state: ok → warn (last 20%) → over (overtime)
     const stateClass =
         secondsRemaining < 0 ? 'state-over' :
-        secondsRemaining <= segment.duration * 0.2 ? 'state-warn' :
+        secondsRemaining <= section.durationSeconds * 0.2 ? 'state-warn' :
         'state-ok';
     STATE_CLASSES.forEach(c => document.body.classList.remove(c));
     document.body.classList.add(stateClass);
@@ -349,26 +279,21 @@ export function render(timeline: Timeline, state: AppState): void {
     const timerStateText =
         state.isPaused ? 'Paused' :
         secondsRemaining < 0 ? 'Overtime' :
-        secondsRemaining <= segment.duration * 0.2 ? 'Wrapping up' :
+        secondsRemaining <= section.durationSeconds * 0.2 ? 'Wrapping up' :
         'On track';
     elTimerState.textContent = timerStateText;
+
     const kickerStatus = state.isPaused
         ? (state.hasStarted ? 'paused' : 'ready')
         : 'in progress';
-    elSegmentKicker.textContent = `${typeLabel} segment ${kickerStatus}`;
+    elSegmentKicker.textContent = `${chapterTitle} · ${section.type} · ${kickerStatus}`;
 
-    // Segment type accent
-    TYPE_CLASSES.forEach(c => document.body.classList.remove(c));
-    if (segment.type) {
-        document.body.classList.add(`type-${segment.type}`);
-    }
-
-    // Paused indicator
     if (state.isPaused) {
         document.body.classList.add('paused');
     } else {
         document.body.classList.remove('paused');
     }
+
     if (elPauseButton) {
         const pauseLabel = state.isPaused
             ? (state.hasStarted ? 'Resume' : 'Start')
@@ -380,20 +305,20 @@ export function render(timeline: Timeline, state: AppState): void {
         if (textEl) textEl.textContent = pauseLabel;
     }
 
-    // Next segment
-    if (nextSegment) {
-        elNextSegment.textContent = nextSegment.title;
+    if (nextPosition) {
+        const nextSection = timeline.chapters[nextPosition.chapterIndex].sections[nextPosition.sectionIndex];
+        elNextSegment.textContent = nextSection.title;
     } else {
-        elNextSegment.textContent = 'Last segment';
+        elNextSegment.textContent = 'Last section';
     }
 
-    // Total session remaining (clock-based once started, planned total before start)
     const sessionRemaining = state.hasStarted
         ? getSessionActualRemaining(state)
-        : timeline.segments.reduce((sum, seg) => sum + seg.duration, 0);
+        : timeline.chapters
+            .flatMap(chapter => chapter.sections)
+            .reduce((sum, s) => sum + s.durationSeconds, 0);
     elTotalRemaining.textContent = formatTime(sessionRemaining);
 
-    // Schedule drift indicator
     const DRIFT_CLASSES = ['drift-ahead', 'drift-behind', 'drift-on-schedule'] as const;
     DRIFT_CLASSES.forEach(c => elScheduleDrift.classList.remove(c));
     if (!state.hasStarted) {
@@ -412,83 +337,13 @@ export function render(timeline: Timeline, state: AppState): void {
         }
     }
 
-    // Right panel: info view or notes view
-    const sectionWithNotesIndex = segment.info?.findIndex((_section, index) => hasSectionNotes(segment, index)) ?? -1;
-    const hasSectionNotesAvailable = sectionWithNotesIndex >= 0;
-    const hasSegmentNotes = typeof segment.transcript === 'string' && segment.transcript.trim().length > 0;
-    const hasNotes = hasSectionNotesAvailable || hasSegmentNotes;
-    elRightPanel?.classList.toggle('panel-notes-available', hasNotes || state.rightPanelMode === 'notes');
+    const hasTranscript = typeof section.transcript === 'string' && section.transcript.trim().length > 0;
+    elRightPanel?.classList.toggle('panel-notes-available', hasTranscript || state.rightPanelMode === 'notes');
     elRightPanel?.classList.toggle('panel-notes-open', state.rightPanelMode === 'notes');
 
-    const rightPanelRenderKey = [
-        state.currentSegmentIndex,
-        state.rightPanelMode,
-        state.notesSectionIndex ?? -1,
-        hasNotes ? 'has-notes' : 'no-notes',
-    ].join('|');
-
-    if (rightPanelRenderKey !== lastRightPanelRenderKey) {
-        if (state.rightPanelMode === 'notes') {
-            // Determine if prev/next notes exist anywhere in the timeline
-            const currentSectionIndex = state.notesSectionIndex;
-            let hasPrevNotes = false;
-            let hasNextNotes = false;
-
-            // Check for next section with notes in current segment
-            if (currentSectionIndex !== undefined) {
-                for (let i = currentSectionIndex + 1; i < (segment.info?.length ?? 0); i++) {
-                    if (hasSectionNotes(segment, i)) { hasNextNotes = true; break; }
-                }
-            }
-            if (!hasNextNotes) {
-                for (let s = state.currentSegmentIndex + 1; s < timeline.segments.length; s++) {
-                    const seg = timeline.segments[s];
-                    const secNotes = seg.info?.some((_sec, idx) => hasSectionNotes(seg, idx)) ?? false;
-                    const segNotes = typeof seg.transcript === 'string' && seg.transcript.trim().length > 0;
-                    if (secNotes || segNotes) { hasNextNotes = true; break; }
-                }
-            }
-
-            // Check for prev section with notes in current segment
-            if (currentSectionIndex !== undefined) {
-                for (let i = currentSectionIndex - 1; i >= 0; i--) {
-                    if (hasSectionNotes(segment, i)) { hasPrevNotes = true; break; }
-                }
-            }
-            if (!hasPrevNotes) {
-                for (let s = state.currentSegmentIndex - 1; s >= 0; s--) {
-                    const seg = timeline.segments[s];
-                    const secNotes = seg.info?.some((_sec, idx) => hasSectionNotes(seg, idx)) ?? false;
-                    const segNotes = typeof seg.transcript === 'string' && seg.transcript.trim().length > 0;
-                    if (secNotes || segNotes) { hasPrevNotes = true; break; }
-                }
-            }
-
-            const nav: NotesNavContext = { hasPrev: hasPrevNotes, hasNext: hasNextNotes };
-
-            const selectedIndex = state.notesSectionIndex;
-            const selectedSection = selectedIndex !== undefined ? segment.info?.[selectedIndex] : undefined;
-
-            if (selectedSection) {
-                const sectionNotes = selectedSection.transcript?.filter(block => block.trim().length > 0) ?? [];
-                if (sectionNotes.length > 0) {
-                    renderNotesPanel(segment.title, selectedSection.label, sectionNotes, nav);
-                } else {
-                    renderNotesPanel(segment.title, segment.title, ['No notes available for this section.'], nav);
-                }
-            } else if (hasSegmentNotes) {
-                renderNotesPanel(segment.title, 'General', [segment.transcript!.trim()], nav);
-            } else if (hasSectionNotesAvailable) {
-                const fallbackSection = segment.info![sectionWithNotesIndex];
-                const fallbackNotes = fallbackSection.transcript!.filter(block => block.trim().length > 0);
-                renderNotesPanel(segment.title, fallbackSection.label, fallbackNotes, nav);
-            } else {
-                renderNotesPanel(segment.title, segment.title, ['No notes available for this segment.'], nav);
-            }
-        } else {
-            renderInfoPanel(segment, hasNotes);
-        }
-
-        lastRightPanelRenderKey = rightPanelRenderKey;
+    if (state.rightPanelMode === 'notes') {
+        renderNotesPanel(timeline, state, section);
+    } else {
+        renderInfoPanel(section);
     }
 }

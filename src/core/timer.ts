@@ -1,22 +1,30 @@
-import { Segment, Timeline, AppState } from '../models/types.js';
+import { Section, Timeline, AppState } from '../models/types.js';
 
 export function getElapsedMs(state: AppState): number {
     if (state.isPaused && state.pausedAt !== undefined) {
-        return state.pausedAt - state.segmentStartTime;
+        return state.pausedAt - state.sectionStartTime;
     }
-    return Date.now() - state.segmentStartTime;
+    return Date.now() - state.sectionStartTime;
 }
 
-export function getSecondsRemaining(segment: Segment, state: AppState): number {
-    return segment.duration - getElapsedMs(state) / 1000;
+export function getSecondsRemaining(section: Section, state: AppState): number {
+    return section.durationSeconds - getElapsedMs(state) / 1000;
 }
 
 export function getTotalRemainingSeconds(timeline: Timeline, state: AppState): number {
-    const segment = timeline.segments[state.currentSegmentIndex];
-    const currentRemaining = Math.max(getSecondsRemaining(segment, state), 0);
-    const futureTotal = timeline.segments
-        .slice(state.currentSegmentIndex + 1)
-        .reduce((sum, seg) => sum + seg.duration, 0);
+    const currentChapter = timeline.chapters[state.currentChapterIndex];
+    const currentSection = currentChapter.sections[state.currentSectionIndex];
+    const currentRemaining = Math.max(getSecondsRemaining(currentSection, state), 0);
+
+    let futureTotal = 0;
+    for (let chapterIndex = state.currentChapterIndex; chapterIndex < timeline.chapters.length; chapterIndex++) {
+        const chapter = timeline.chapters[chapterIndex];
+        const startSection = chapterIndex === state.currentChapterIndex ? state.currentSectionIndex + 1 : 0;
+        for (let sectionIndex = startSection; sectionIndex < chapter.sections.length; sectionIndex++) {
+            futureTotal += chapter.sections[sectionIndex].durationSeconds;
+        }
+    }
+
     return currentRemaining + futureTotal;
 }
 
