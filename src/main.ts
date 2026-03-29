@@ -191,6 +191,12 @@ async function init(): Promise<void> {
     });
 
     tick(); // render immediately before first interval
+    
+    // Fade in after first render to prevent flicker
+    requestAnimationFrame(() => {
+        document.body.classList.remove('timer-loading');
+    });
+    
     setInterval(tick, 100);
 }
 

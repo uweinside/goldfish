@@ -37,7 +37,7 @@ body {
     overflow: hidden;
     padding: 1.5rem;
     font-family: 'DM Sans', sans-serif;
-    transition: background 0.35s ease, color 0.35s ease;
+    transition: background 0.35s ease, color 0.35s ease, opacity 0.35s ease;
     background:
         radial-gradient(1200px at 20% 10%, rgba(255, 255, 255, 0.04), transparent),
         radial-gradient(1000px at 80% 90%, rgba(255, 255, 255, 0.03), transparent),
