@@ -8,6 +8,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "clean:incremental": "cmd /c \"if exist src-tauri\\target\\debug\\incremental (rmdir /s /q src-tauri\\target\\debug\\incremental && echo Removed incremental cache) else echo No incremental cache found\"",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },

@@ -19,7 +19,10 @@
                 <span id="editor-total-segments">-- segments</span>
                 <span id="editor-total-duration">--</span>
             </div>
-            <a class="editor-back-link editor-btn" href="/" aria-label="Back to course listing">&larr; Back to Courses</a>
+            <div class="editor-header-actions" aria-label="Editor actions">
+                <a id="editor-run-link" class="editor-btn editor-btn-primary" href="/">Run Course</a>
+                <a class="editor-back-link editor-btn" href="/" aria-label="Back to course listing">&larr; Back to Courses</a>
+            </div>
         </header>
 
         <section class="editor-content" aria-label="Editor workspace">
@@ -83,13 +86,6 @@
             </aside>
         </section>
 
-        <footer class="editor-footer" aria-label="Editor actions">
-            <div class="editor-footer-left">Keyboard: Up/Down select segment</div>
-            <div class="editor-footer-right">
-                <button type="button" class="editor-btn" disabled>Preview Rehearsal</button>
-                <a id="editor-run-link" class="editor-btn editor-btn-primary" href="/">Run Timer</a>
-            </div>
-        </footer>
     </main>
 
     <script type="module" src="/src/editor.ts"></script>

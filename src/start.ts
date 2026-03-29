@@ -9,6 +9,7 @@ const START_SPLASH_EXIT_MS = 380;
 let allCourses: CourseEntry[] = [];
 let currentPage = 0;
 let localCourseStatusTimeoutId: number | null = null;
+const githubCourseIds = new Set<string>();
 
 const localCourseDeleteState: {
     courseId: string | null;
@@ -93,9 +94,9 @@ function syncDeleteModalState(): void {
     elements.confirmButton.textContent = localCourseDeleteState.isDeleting ? 'Deleting...' : 'Delete';
 }
 
-function closeDeleteCourseModal(restoreFocus = true): void {
+function closeDeleteCourseModal(restoreFocus = true, force = false): void {
     const elements = getDeleteModalElements();
-    if (!elements || localCourseDeleteState.isDeleting) {
+    if (!elements || (localCourseDeleteState.isDeleting && !force)) {
         return;
     }
 
@@ -156,7 +157,7 @@ async function confirmDeleteLocalCourse(): Promise<void> {
     try {
         const deleted = await deleteLocalCourse(courseId);
         await refreshLocalCourses();
-        closeDeleteCourseModal();
+        closeDeleteCourseModal(true, true);
 
         if (deleted) {
             setLocalCourseStatus(`Deleted "${courseTitle}".`);
@@ -407,6 +408,7 @@ function renderLocalCourses(summaries: CourseSummary[]): void {
     grid.innerHTML = '';
     for (const summary of summaries) {
         const title = summary.title || summary.id.toUpperCase();
+        const isGitHubCourse = githubCourseIds.has(summary.id);
         const timerHref = `timer.html?course=${encodeURIComponent(summary.id)}`;
         const editorHref = `editor.html?course=${encodeURIComponent(summary.id)}`;
 
@@ -438,15 +440,18 @@ function renderLocalCourses(summaries: CourseSummary[]): void {
         editLink.textContent = 'Edit';
         editLink.setAttribute('aria-label', `Edit course ${title}`);
 
-        const deleteButton = document.createElement('button');
-        deleteButton.type = 'button';
-        deleteButton.className = 'course-card-action course-card-action-delete';
-        deleteButton.textContent = 'Delete';
-        deleteButton.dataset.deleteCourseId = summary.id;
-        deleteButton.dataset.deleteCourseTitle = title;
-        deleteButton.setAttribute('aria-label', `Delete course ${title}`);
+        actions.append(runLink, editLink);
+        if (!isGitHubCourse) {
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'course-card-action course-card-action-delete';
+            deleteButton.textContent = 'Delete';
+            deleteButton.dataset.deleteCourseId = summary.id;
+            deleteButton.dataset.deleteCourseTitle = title;
+            deleteButton.setAttribute('aria-label', `Delete course ${title}`);
+            actions.append(deleteButton);
+        }
 
-        actions.append(runLink, editLink, deleteButton);
         card.append(primaryLink, actions);
         grid.appendChild(card);
     }
@@ -605,13 +610,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         listCourses(),
     ]);
 
-    if (localResult.status === 'fulfilled') {
-        renderLocalCourses(localResult.value);
-    }
-
     if (githubResult.status === 'fulfilled') {
+        githubCourseIds.clear();
+        for (const course of githubResult.value) {
+            githubCourseIds.add(course.id);
+        }
+
+        if (localResult.status === 'fulfilled') {
+            renderLocalCourses(localResult.value);
+        }
+
         renderCourseGrid(githubResult.value);
     } else {
+        githubCourseIds.clear();
+        if (localResult.status === 'fulfilled') {
+            renderLocalCourses(localResult.value);
+        }
+
         const reason = githubResult.reason;
         const msg = reason instanceof Error ? reason.message : String(reason ?? 'Unknown error');
         renderError(`Could not load courses: ${msg}`);
