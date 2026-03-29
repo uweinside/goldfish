@@ -606,6 +606,61 @@ body.paused #timer {
     text-transform: uppercase;
 }
 
+.chapter-section-instructions {
+    margin-top: 0.7rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.chapter-section-instructions h2,
+.chapter-section-instructions h3,
+.chapter-section-instructions h4 {
+    color: var(--text-main);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.chapter-section-instructions h2 { font-size: clamp(1rem, 1.4vw, 1.2rem); }
+.chapter-section-instructions h3 { font-size: clamp(0.95rem, 1.2vw, 1.05rem); }
+.chapter-section-instructions h4 { font-size: clamp(0.9rem, 1.1vw, 1rem); }
+
+.chapter-section-instructions p,
+.chapter-section-instructions li {
+    font-size: clamp(0.9rem, 1.1vw, 1rem);
+    line-height: 1.4;
+}
+
+.chapter-section-instructions ul,
+.chapter-section-instructions ol {
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.chapter-section-instructions a {
+    color: #93C5FD;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+}
+
+.chapter-section-instructions pre {
+    background: rgba(1, 1, 1, 0.76);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    overflow-x: auto;
+}
+
+.chapter-section-instructions code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #e4e6eb;
+}
+
 .info-label-row {
     display: flex;
     align-items: center;
