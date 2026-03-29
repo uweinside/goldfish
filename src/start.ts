@@ -9,6 +9,22 @@ const START_SPLASH_EXIT_MS = 380;
 let allCourses: CourseEntry[] = [];
 let currentPage = 0;
 
+function shouldSkipStartSplash(): boolean {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('from') === 'editor';
+}
+
+function hideStartSplashImmediately(): void {
+    const splash = document.getElementById('startup-splash') as HTMLElement | null;
+    if (!splash) {
+        return;
+    }
+
+    splash.hidden = true;
+    splash.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('start-splash-active');
+}
+
 function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -356,7 +372,13 @@ function showNewCourseDialog(): void {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const splashController = createStartSplashController(Date.now());
+    const skipSplash = shouldSkipStartSplash();
+    if (skipSplash) {
+        hideStartSplashImmediately();
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const splashController = skipSplash ? null : createStartSplashController(Date.now());
     document.getElementById('new-course-btn')?.addEventListener('click', showNewCourseDialog);
 
     // Load local courses (Tauri only — silently skipped in browser context)
@@ -374,7 +396,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         renderError(`Could not load courses: ${msg}`);
     } finally {
-        await splashController.dismiss();
+        if (splashController) {
+            await splashController.dismiss();
+        }
     }
 
     document.addEventListener('keydown', (e) => {

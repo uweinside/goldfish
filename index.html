@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CuePilot</title>
     <link rel="stylesheet" href="/css/site.css" />
+    <script>
+        if (new URLSearchParams(window.location.search).get('from') === 'editor') {
+            document.documentElement.classList.add('skip-start-splash');
+        }
+    </script>
 </head>
 <body class="start-splash-active">
     <div id="startup-splash" class="start-splash" role="status" aria-live="polite" aria-label="CuePilot is loading">

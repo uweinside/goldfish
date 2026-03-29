@@ -145,6 +145,10 @@ function getCourseId(): string | null {
     return params.get('course');
 }
 
+function buildEditorReturnUrl(): string {
+    return '/?from=editor';
+}
+
 function escapeHtml(text: string): string {
     return text
         .replace(/&/g, '&amp;')
@@ -908,8 +912,13 @@ async function init(): Promise<void> {
         return;
     }
 
+    const backLink = document.querySelector('.editor-back-link') as HTMLAnchorElement | null;
+    if (backLink) {
+        backLink.href = buildEditorReturnUrl();
+    }
+
     if (elRunLink) {
-        elRunLink.href = `timer.html?course=${encodeURIComponent(courseId)}`;
+        elRunLink.href = `timer.html?course=${encodeURIComponent(courseId)}&returnTo=editor`;
     }
 
     let timeline: Timeline;
