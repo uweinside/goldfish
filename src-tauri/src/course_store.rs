@@ -3,34 +3,14 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const COURSES_DIR: &str = "courses";
-
-fn workspace_root() -> Result<PathBuf, String> {
-  std::env::current_dir().map_err(|e| format!("failed to resolve workspace root: {e}"))
-}
-
-fn legacy_courses_dir() -> Result<PathBuf, String> {
-  Ok(workspace_root()?.join(COURSES_DIR))
-}
-
-fn courses_dir() -> Result<PathBuf, String> {
-  let root = workspace_root()?;
-
-  // In `tauri dev`, cwd is typically `.../src-tauri` which is watch-scanned.
-  // Writing there causes app restarts on every autosave, so write to repo-root `courses/`.
-  if root.file_name() == Some(OsStr::new("src-tauri")) {
-    if let Some(parent) = root.parent() {
-      return Ok(parent.join(COURSES_DIR));
-    }
-  }
-
-  Ok(root.join(COURSES_DIR))
-}
-
-fn ensure_courses_dir() -> Result<PathBuf, String> {
-  let dir = courses_dir()?;
-  fs::create_dir_all(&dir).map_err(|e| format!("failed to create courses directory: {e}"))?;
-  Ok(dir)
+/// Resolved course storage paths, computed once at app startup.
+///
+/// `primary` is the writable directory for all new writes.  
+/// `legacy` is an optional read-only fallback (used in dev when CWD == `src-tauri`).
+pub struct CourseDirs {
+  pub primary: PathBuf,
+  /// Optional secondary directory to search when reading, but never written to.
+  pub legacy: Option<PathBuf>,
 }
 
 pub fn sanitize_course_id(course_id: &str) -> Result<String, String> {
@@ -65,28 +45,30 @@ pub fn sanitize_course_id(course_id: &str) -> Result<String, String> {
   Ok(normalized.to_string())
 }
 
-pub fn course_file_path(course_id: &str) -> Result<PathBuf, String> {
+pub fn course_file_path(course_id: &str, dirs: &CourseDirs) -> Result<PathBuf, String> {
   let safe_id = sanitize_course_id(course_id)?;
-  Ok(courses_dir()?.join(format!("{safe_id}.json")))
+  Ok(dirs.primary.join(format!("{safe_id}.json")))
 }
 
-pub fn list_course_ids() -> Result<Vec<String>, String> {
-  let primary_dir = ensure_courses_dir()?;
-  let legacy_dir = legacy_courses_dir()?;
+pub fn list_course_ids(dirs: &CourseDirs) -> Result<Vec<String>, String> {
+  fs::create_dir_all(&dirs.primary)
+    .map_err(|e| format!("failed to create courses directory: {e}"))?;
 
   let mut candidates: Vec<PathBuf> = Vec::new();
 
   let primary_entries =
-    fs::read_dir(&primary_dir).map_err(|e| format!("failed to list courses directory: {e}"))?;
+    fs::read_dir(&dirs.primary).map_err(|e| format!("failed to list courses directory: {e}"))?;
   for entry in primary_entries.filter_map(|entry| entry.ok()) {
     candidates.push(entry.path());
   }
 
-  if legacy_dir != primary_dir && legacy_dir.exists() {
-    let legacy_entries =
-      fs::read_dir(&legacy_dir).map_err(|e| format!("failed to list legacy courses directory: {e}"))?;
-    for entry in legacy_entries.filter_map(|entry| entry.ok()) {
-      candidates.push(entry.path());
+  if let Some(legacy_dir) = &dirs.legacy {
+    if legacy_dir != &dirs.primary && legacy_dir.exists() {
+      let legacy_entries = fs::read_dir(legacy_dir)
+        .map_err(|e| format!("failed to list legacy courses directory: {e}"))?;
+      for entry in legacy_entries.filter_map(|entry| entry.ok()) {
+        candidates.push(entry.path());
+      }
     }
   }
 
@@ -102,25 +84,29 @@ pub fn list_course_ids() -> Result<Vec<String>, String> {
   Ok(ids)
 }
 
-pub fn read_course_json(course_id: &str) -> Result<String, String> {
-  let path = course_file_path(course_id)?;
+pub fn read_course_json(course_id: &str, dirs: &CourseDirs) -> Result<String, String> {
+  let safe_id = sanitize_course_id(course_id)?;
+  let path = dirs.primary.join(format!("{safe_id}.json"));
   if path.exists() {
     return fs::read_to_string(&path)
       .map_err(|e| format!("failed to read course file '{}': {e}", path.display()));
   }
 
-  let legacy_path = legacy_courses_dir()?.join(format!("{course_id}.json"));
-  if legacy_path.exists() {
-    return fs::read_to_string(&legacy_path)
-      .map_err(|e| format!("failed to read legacy course file '{}': {e}", legacy_path.display()));
+  if let Some(legacy_dir) = &dirs.legacy {
+    let legacy_path = legacy_dir.join(format!("{safe_id}.json"));
+    if legacy_path.exists() {
+      return fs::read_to_string(&legacy_path)
+        .map_err(|e| format!("failed to read legacy course file '{}': {e}", legacy_path.display()));
+    }
   }
 
   Err(format!("course '{course_id}' was not found"))
 }
 
-pub fn write_course_json_atomic(course_id: &str, json: &str) -> Result<(PathBuf, usize), String> {
-  let _ = ensure_courses_dir()?;
-  let target = course_file_path(course_id)?;
+pub fn write_course_json_atomic(course_id: &str, json: &str, dirs: &CourseDirs) -> Result<(PathBuf, usize), String> {
+  fs::create_dir_all(&dirs.primary)
+    .map_err(|e| format!("failed to create courses directory: {e}"))?;
+  let target = course_file_path(course_id, dirs)?;
   let temp_name = format!("{}.tmp", target.file_name().unwrap_or_default().to_string_lossy());
   let tmp_path = target.with_file_name(temp_name);
 
@@ -143,9 +129,8 @@ pub fn write_course_json_atomic(course_id: &str, json: &str) -> Result<(PathBuf,
   Ok((target, json.len()))
 }
 
-pub fn delete_course(course_id: &str) -> Result<bool, String> {
-  let path = course_file_path(course_id)?;
-  let legacy_path = legacy_courses_dir()?.join(format!("{course_id}.json"));
+pub fn delete_course(course_id: &str, dirs: &CourseDirs) -> Result<bool, String> {
+  let path = course_file_path(course_id, dirs)?;
   let mut deleted = false;
 
   if path.exists() {
@@ -154,14 +139,18 @@ pub fn delete_course(course_id: &str) -> Result<bool, String> {
     deleted = true;
   }
 
-  if legacy_path != path && legacy_path.exists() {
-    fs::remove_file(&legacy_path).map_err(|e| {
-      format!(
-        "failed to delete legacy course file '{}': {e}",
-        legacy_path.display()
-      )
-    })?;
-    deleted = true;
+  if let Some(legacy_dir) = &dirs.legacy {
+    let safe_id = sanitize_course_id(course_id)?;
+    let legacy_path = legacy_dir.join(format!("{safe_id}.json"));
+    if legacy_path != path && legacy_path.exists() {
+      fs::remove_file(&legacy_path).map_err(|e| {
+        format!(
+          "failed to delete legacy course file '{}': {e}",
+          legacy_path.display()
+        )
+      })?;
+      deleted = true;
+    }
   }
 
   Ok(deleted)

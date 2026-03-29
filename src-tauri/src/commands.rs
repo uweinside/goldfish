@@ -1,6 +1,6 @@
 use crate::course_model::{validate_timeline_strict, Timeline, ValidationError};
 use crate::course_store::{
-  delete_course, file_name_from_path, list_course_ids, parse_timeline, read_course_json,
+  CourseDirs, delete_course, file_name_from_path, list_course_ids, parse_timeline, read_course_json,
   serialize_timeline_pretty, write_course_json_atomic,
 };
 use serde::{Deserialize, Serialize};
@@ -47,12 +47,12 @@ pub struct ValidationResult {
 }
 
 #[tauri::command]
-pub fn list_local_courses() -> Result<Vec<CourseSummary>, String> {
-  let ids = list_course_ids()?;
+pub fn list_local_courses(dirs: tauri::State<CourseDirs>) -> Result<Vec<CourseSummary>, String> {
+  let ids = list_course_ids(&dirs)?;
   let mut summaries = Vec::with_capacity(ids.len());
 
   for id in ids {
-    let json = read_course_json(&id)?;
+    let json = read_course_json(&id, &dirs)?;
     let document = parse_timeline(&json)?;
     validate_timeline_strict(&document).map_err(|e| {
       format!(
@@ -86,8 +86,8 @@ pub fn list_local_courses() -> Result<Vec<CourseSummary>, String> {
 }
 
 #[tauri::command]
-pub fn load_local_course(request: CourseIdRequest) -> Result<Timeline, String> {
-  let json = read_course_json(&request.course_id)?;
+pub fn load_local_course(dirs: tauri::State<CourseDirs>, request: CourseIdRequest) -> Result<Timeline, String> {
+  let json = read_course_json(&request.course_id, &dirs)?;
   let document = parse_timeline(&json)?;
   validate_timeline_strict(&document)
     .map_err(|e| format!("validation failed at {} ({}): {}", e.path, e.code, e.message))?;
@@ -109,12 +109,12 @@ pub fn validate_course_document(request: ValidateCourseRequest) -> Result<Valida
 }
 
 #[tauri::command]
-pub fn save_course_document(request: SaveCourseRequest) -> Result<SaveCourseResult, String> {
+pub fn save_course_document(dirs: tauri::State<CourseDirs>, request: SaveCourseRequest) -> Result<SaveCourseResult, String> {
   validate_timeline_strict(&request.document)
     .map_err(|e| format!("validation failed at {} ({}): {}", e.path, e.code, e.message))?;
 
   let json = serialize_timeline_pretty(&request.document)?;
-  let (path, bytes_written) = write_course_json_atomic(&request.course_id, &json)?;
+  let (path, bytes_written) = write_course_json_atomic(&request.course_id, &json, &dirs)?;
 
   Ok(SaveCourseResult {
     id: request.course_id,
@@ -124,6 +124,6 @@ pub fn save_course_document(request: SaveCourseRequest) -> Result<SaveCourseResu
 }
 
 #[tauri::command]
-pub fn delete_local_course(request: CourseIdRequest) -> Result<bool, String> {
-  delete_course(&request.course_id)
+pub fn delete_local_course(dirs: tauri::State<CourseDirs>, request: CourseIdRequest) -> Result<bool, String> {
+  delete_course(&request.course_id, &dirs)
 }
