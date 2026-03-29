@@ -4,8 +4,61 @@ import { CourseSummary } from './models/course-authoring.js';
 import { Timeline } from './models/types.js';
 
 const PAGE_SIZE = 6;
+const START_SPLASH_MIN_VISIBLE_MS = 1200;
+const START_SPLASH_EXIT_MS = 380;
 let allCourses: CourseEntry[] = [];
 let currentPage = 0;
+
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function createStartSplashController(startedAt: number): { dismiss: () => Promise<void> } {
+    const splash = document.getElementById('startup-splash') as HTMLElement | null;
+    const logo = document.getElementById('startup-splash-logo') as HTMLImageElement | null;
+
+    if (logo) {
+        logo.src = new URL('../src-tauri/icons/icon.png', import.meta.url).href;
+    }
+
+    let dismissed = false;
+    const dismiss = async (): Promise<void> => {
+        if (!splash || dismissed) return;
+        dismissed = true;
+
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, START_SPLASH_MIN_VISIBLE_MS - elapsed);
+        if (remaining > 0) {
+            await delay(remaining);
+        }
+
+        splash.classList.add('start-splash-exit');
+        document.body.classList.remove('start-splash-active');
+
+        await new Promise<void>((resolve) => {
+            let settled = false;
+            const finish = (): void => {
+                if (settled) return;
+                settled = true;
+                splash.removeEventListener('transitionend', onTransitionEnd);
+                splash.hidden = true;
+                splash.setAttribute('aria-hidden', 'true');
+                resolve();
+            };
+
+            const onTransitionEnd = (event: TransitionEvent): void => {
+                if (event.target === splash && event.propertyName === 'opacity') {
+                    finish();
+                }
+            };
+
+            splash.addEventListener('transitionend', onTransitionEnd);
+            setTimeout(finish, START_SPLASH_EXIT_MS + 80);
+        });
+    };
+
+    return { dismiss };
+}
 
 function totalPages(): number {
     return Math.max(1, Math.ceil(allCourses.length / PAGE_SIZE));
@@ -303,6 +356,7 @@ function showNewCourseDialog(): void {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const splashController = createStartSplashController(Date.now());
     document.getElementById('new-course-btn')?.addEventListener('click', showNewCourseDialog);
 
     // Load local courses (Tauri only — silently skipped in browser context)
@@ -319,6 +373,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         renderError(`Could not load courses: ${msg}`);
+    } finally {
+        await splashController.dismiss();
     }
 
     document.addEventListener('keydown', (e) => {
