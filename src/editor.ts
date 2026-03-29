@@ -30,6 +30,79 @@ const state: EditorViewState = {
 let chapterSortable: Sortable | null = null;
 let sectionSortable: Sortable | null = null;
 
+function createDefaultSection(title = 'Section 1'): Section {
+    return {
+        title,
+        type: 'Narration',
+        durationSeconds: 300,
+        instructions: 'Add your instructions here.',
+    };
+}
+
+function createDefaultChapter(title = 'Chapter 1'): Chapter {
+    return {
+        title,
+        sections: [createDefaultSection()],
+    };
+}
+
+function sanitizeIndex(value: number, fallback: number): number {
+    return Number.isInteger(value) ? value : fallback;
+}
+
+export function normalizeTimelineAndSelection(
+    timeline: Timeline,
+    selectedChapterIndex: number,
+    selectedSectionIndex: number | null,
+): { selectedChapterIndex: number; selectedSectionIndex: number | null } {
+    if (!timeline.title) {
+        timeline.title = 'Untitled Course';
+    }
+
+    if (!Array.isArray(timeline.chapters) || timeline.chapters.length === 0) {
+        timeline.chapters = [createDefaultChapter()];
+    }
+
+    for (const chapter of timeline.chapters) {
+        if (!Array.isArray(chapter.sections) || chapter.sections.length === 0) {
+            chapter.sections = [createDefaultSection()];
+        }
+    }
+
+    const normalizedChapterIndex = clamp(
+        sanitizeIndex(selectedChapterIndex, 0),
+        0,
+        timeline.chapters.length - 1,
+    );
+
+    const selectedChapter = timeline.chapters[normalizedChapterIndex];
+    const maxSectionIndex = selectedChapter.sections.length - 1;
+
+    let normalizedSectionIndex: number | null = selectedSectionIndex;
+    if (normalizedSectionIndex !== null) {
+        normalizedSectionIndex = clamp(
+            sanitizeIndex(normalizedSectionIndex, 0),
+            0,
+            maxSectionIndex,
+        );
+    }
+
+    return {
+        selectedChapterIndex: normalizedChapterIndex,
+        selectedSectionIndex: normalizedSectionIndex,
+    };
+}
+
+function normalizeEditorState(timeline: Timeline): void {
+    const normalized = normalizeTimelineAndSelection(
+        timeline,
+        state.selectedChapterIndex,
+        state.selectedSectionIndex,
+    );
+    state.selectedChapterIndex = normalized.selectedChapterIndex;
+    state.selectedSectionIndex = normalized.selectedSectionIndex;
+}
+
 function reorderList<T>(items: T[], fromIndex: number, toIndex: number): void {
     if (fromIndex === toIndex) {
         return;
@@ -70,6 +143,10 @@ let editorSplits = { ...DEFAULT_EDITOR_SPLITS };
 function getCourseId(): string | null {
     const params = new URLSearchParams(window.location.search);
     return params.get('course');
+}
+
+function buildEditorReturnUrl(): string {
+    return '/?from=editor';
 }
 
 function escapeHtml(text: string): string {
@@ -121,6 +198,16 @@ function getSelectedSection(): Section | null {
         return null;
     }
     return chapter.sections[state.selectedSectionIndex] ?? null;
+}
+
+function selectSectionForActiveChapter(preferredIndex = 0): void {
+    const chapter = getSelectedChapter();
+    if (!chapter || chapter.sections.length === 0) {
+        state.selectedSectionIndex = null;
+        return;
+    }
+
+    state.selectedSectionIndex = clamp(preferredIndex, 0, chapter.sections.length - 1);
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -287,7 +374,7 @@ function renderChapterList(timeline: Timeline): void {
 
         button.addEventListener('click', () => {
             state.selectedChapterIndex = index;
-            state.selectedSectionIndex = null;
+            selectSectionForActiveChapter();
             render(timeline);
         });
 
@@ -347,7 +434,7 @@ function renderSectionList(timeline: Timeline): void {
         row.className = 'editor-card-row';
         row.appendChild(card);
 
-        if (index === state.selectedSectionIndex) {
+        if (index === state.selectedSectionIndex && chapter.sections.length > 1) {
             const deleteBtn = document.createElement('button');
             deleteBtn.type = 'button';
             deleteBtn.className = 'editor-card-delete';
@@ -395,7 +482,8 @@ function setupSortables(timeline: Timeline): void {
                     evt.oldIndex,
                     evt.newIndex,
                 ) ?? 0;
-                state.selectedSectionIndex = null;
+                selectSectionForActiveChapter();
+                normalizeEditorState(timeline);
                 saveCourse();
                 render(timeline);
             },
@@ -425,6 +513,7 @@ function setupSortables(timeline: Timeline): void {
                     evt.oldIndex,
                     evt.newIndex,
                 );
+                normalizeEditorState(timeline);
                 saveCourse();
                 render(timeline);
             },
@@ -603,6 +692,8 @@ function openMarkdownEditor(field: 'section-instructions' | 'section-transcript'
 }
 
 function render(timeline: Timeline): void {
+    normalizeEditorState(timeline);
+
     if (elCourseTitle && document.activeElement !== elCourseTitle) {
         elCourseTitle.textContent = timeline.title || 'Untitled Course';
     }
@@ -621,7 +712,7 @@ function render(timeline: Timeline): void {
     renderSectionEditor(timeline);
 
     if (elAddSectionBtn) {
-        elAddSectionBtn.disabled = state.selectedChapterIndex < 0;
+        elAddSectionBtn.disabled = !getSelectedChapter();
     }
 }
 
@@ -703,9 +794,9 @@ function removeChapter(index: number, timeline: Timeline): void {
     if (timeline.chapters.length <= 1) {
         return;
     }
+
     timeline.chapters.splice(index, 1);
-    state.selectedChapterIndex = Math.min(state.selectedChapterIndex, timeline.chapters.length - 1);
-    state.selectedSectionIndex = null;
+    normalizeEditorState(timeline);
     saveCourse();
     render(timeline);
 }
@@ -716,15 +807,13 @@ function addSection(): void {
         return;
     }
 
-    const nextSection: Section = {
-        title: 'New Section',
-        type: 'Narration',
-        durationSeconds: 300,
-        instructions: 'Add your instructions here.',
-    };
+    const nextSection: Section = createDefaultSection('New Section');
 
     chapter.sections.push(nextSection);
     state.selectedSectionIndex = chapter.sections.length - 1;
+    if (state.timeline) {
+        normalizeEditorState(state.timeline);
+    }
     saveCourse();
 
     if (state.timeline) {
@@ -738,12 +827,20 @@ function removeSection(index: number): void {
         return;
     }
 
+    if (chapter.sections.length <= 1) {
+        return;
+    }
+
     chapter.sections.splice(index, 1);
 
     if (state.selectedSectionIndex === index) {
         state.selectedSectionIndex = chapter.sections.length > 0 ? Math.min(index, chapter.sections.length - 1) : null;
     } else if (state.selectedSectionIndex !== null && state.selectedSectionIndex > index) {
         state.selectedSectionIndex -= 1;
+    }
+
+    if (state.timeline) {
+        normalizeEditorState(state.timeline);
     }
 
     saveCourse();
@@ -757,15 +854,11 @@ function addChapter(): void {
 
     timeline.chapters.push({
         title: 'New Chapter',
-        sections: [{
-            title: 'New Section',
-            type: 'Narration',
-            durationSeconds: 300,
-            instructions: 'Add your instructions here.',
-        }],
+        sections: [createDefaultSection('New Section')],
     });
     state.selectedChapterIndex = timeline.chapters.length - 1;
     state.selectedSectionIndex = null;
+    normalizeEditorState(timeline);
     saveCourse();
     render(timeline);
 }
@@ -812,37 +905,6 @@ async function saveCourse(): Promise<void> {
     }
 }
 
-function ensureValidTimeline(timeline: Timeline): Timeline {
-    if (!timeline.title) {
-        timeline.title = 'Untitled Course';
-    }
-
-    if (!Array.isArray(timeline.chapters) || timeline.chapters.length === 0) {
-        timeline.chapters = [{
-            title: 'Chapter 1',
-            sections: [{
-                title: 'Section 1',
-                type: 'Narration',
-                durationSeconds: 300,
-                instructions: 'Add your instructions here.',
-            }],
-        }];
-    }
-
-        for (const chapter of timeline.chapters) {
-        if (!Array.isArray(chapter.sections) || chapter.sections.length === 0) {
-            chapter.sections = [{
-                title: 'Section 1',
-                type: 'Narration',
-                durationSeconds: 300,
-                instructions: 'Add your instructions here.',
-            }];
-        }
-    }
-
-    return timeline;
-}
-
 async function init(): Promise<void> {
     const courseId = getCourseId();
     if (!courseId) {
@@ -850,8 +912,13 @@ async function init(): Promise<void> {
         return;
     }
 
+    const backLink = document.querySelector('.editor-back-link') as HTMLAnchorElement | null;
+    if (backLink) {
+        backLink.href = buildEditorReturnUrl();
+    }
+
     if (elRunLink) {
-        elRunLink.href = `timer.html?course=${encodeURIComponent(courseId)}`;
+        elRunLink.href = `timer.html?course=${encodeURIComponent(courseId)}&returnTo=editor`;
     }
 
     let timeline: Timeline;
@@ -862,6 +929,10 @@ async function init(): Promise<void> {
         return;
     }
 
+    state.selectedChapterIndex = timeline.chapters.length - 1;
+    const initialChapter = timeline.chapters[state.selectedChapterIndex];
+    state.selectedSectionIndex = initialChapter ? initialChapter.sections.length - 1 : null;
+    normalizeEditorState(timeline);
     state.timeline = timeline;
 
     setupEditorDividers();
@@ -900,12 +971,14 @@ async function init(): Promise<void> {
         if (event.key === 'ArrowDown') {
             event.preventDefault();
             state.selectedChapterIndex = Math.min(state.selectedChapterIndex + 1, timeline.chapters.length - 1);
-            state.selectedSectionIndex = null;
+            selectSectionForActiveChapter();
+            normalizeEditorState(timeline);
             render(timeline);
         } else if (event.key === 'ArrowUp') {
             event.preventDefault();
             state.selectedChapterIndex = Math.max(state.selectedChapterIndex - 1, 0);
-            state.selectedSectionIndex = null;
+            selectSectionForActiveChapter();
+            normalizeEditorState(timeline);
             render(timeline);
         } else if (event.key === 'Tab' && elSectionsList && elSectionsList.children.length > 0) {
             const sectionCards = Array.from(elSectionsList.querySelectorAll('.editor-info-card'));
@@ -920,6 +993,7 @@ async function init(): Promise<void> {
             } else {
                 state.selectedSectionIndex = Math.min(state.selectedSectionIndex + 1, sectionCards.length - 1);
             }
+            normalizeEditorState(timeline);
             render(timeline);
         }
     });

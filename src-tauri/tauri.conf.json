@@ -15,6 +15,7 @@
         "title": "CuePilot",
         "width": 1440,
         "height": 900,
+        "backgroundColor": "#0b0b0c",
         "resizable": true,
         "fullscreen": false
       }

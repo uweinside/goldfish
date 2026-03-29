@@ -8,6 +8,11 @@ function getCourseId(): string | null {
     return params.get('course');
 }
 
+function getStartReturnUrl(): string {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('returnTo') === 'editor' ? '/?from=editor' : '/?from=timer';
+}
+
 async function init(): Promise<void> {
     const courseId = getCourseId();
     if (!courseId) {
@@ -86,7 +91,7 @@ async function init(): Promise<void> {
     });
 
     modalConfirm?.addEventListener('click', () => {
-        window.location.href = '/';
+        window.location.href = getStartReturnUrl();
     });
 
     exitModal?.addEventListener('click', (e) => {

@@ -52,6 +52,18 @@
           "transcript": "Transcript D"
         }
       ]
+    },
+    {
+      "title": "New Chapter",
+      "sections": [
+        {
+          "title": "New Section",
+          "type": "Narration",
+          "durationSeconds": 300,
+          "instructions": "Add your instructions here.",
+          "transcript": null
+        }
+      ]
     }
   ]
 }
