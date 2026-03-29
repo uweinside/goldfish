@@ -273,10 +273,9 @@ function setupEditorDividers(): void {
             setEditorSplits(percent, editorSplits.split2);
         } else {
             const left = clientX - rect.left;
-            const leftAfterDiv1 = left - (editorSplits.split1 + 0.2);
-            const remainingWidth = rect.width - (editorSplits.split1 + 0.2);
-            const percent = remainingWidth > 0 ? (leftAfterDiv1 / remainingWidth) * 100 : 0;
-            setEditorSplits(editorSplits.split1, percent);
+            const percent = (left / rect.width) * 100;
+            const split2 = percent - editorSplits.split1;
+            setEditorSplits(editorSplits.split1, split2);
         }
     };
 
