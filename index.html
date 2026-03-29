@@ -75,6 +75,7 @@
                 <h2 class="local-courses-title">My Courses</h2>
                 <button type="button" id="new-course-btn" class="editor-btn editor-btn-primary">+ New Course</button>
             </div>
+            <p id="local-course-status" class="local-course-status" aria-live="polite" hidden></p>
             <div id="local-course-grid" class="local-course-grid course-grid"></div>
         </section>
         <div id="github-courses-label" class="start-section-label" hidden>From GitHub</div>
@@ -89,6 +90,17 @@
         <div id="pagination-controls" class="pagination-controls"></div>
         <footer class="start-footer">&copy; 2026 by Uwe Baumann</footer>
     </main>
+    <div id="delete-course-modal" class="modal-overlay" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-course-modal-title">
+            <h2 id="delete-course-modal-title" class="modal-title">Delete course?</h2>
+            <p id="delete-course-modal-message" class="modal-message">This action cannot be undone.</p>
+            <p id="delete-course-modal-error" class="new-course-error" hidden></p>
+            <div class="modal-actions">
+                <button type="button" id="delete-course-cancel" class="control-btn control-btn-primary">Cancel</button>
+                <button type="button" id="delete-course-confirm" class="control-btn control-btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
     <script type="module" src="/src/start.ts"></script>
 </body>
 </html>

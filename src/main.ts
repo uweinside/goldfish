@@ -10,7 +10,7 @@ function getCourseId(): string | null {
 
 function getStartReturnUrl(): string {
     const params = new URLSearchParams(window.location.search);
-    return params.get('returnTo') === 'editor' ? '/?from=editor' : '/';
+    return params.get('returnTo') === 'editor' ? '/?from=editor' : '/?from=timer';
 }
 
 async function init(): Promise<void> {

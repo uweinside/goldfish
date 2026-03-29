@@ -1,5 +1,5 @@
 import { listCourses, CourseEntry } from './core/data-loader.js';
-import { listLocalCourses, saveCourseDocument } from './core/course-authoring-api.js';
+import { deleteLocalCourse, listLocalCourses, saveCourseDocument } from './core/course-authoring-api.js';
 import { CourseSummary } from './models/course-authoring.js';
 import { Timeline } from './models/types.js';
 
@@ -8,10 +8,176 @@ const START_SPLASH_MIN_VISIBLE_MS = 700;
 const START_SPLASH_EXIT_MS = 380;
 let allCourses: CourseEntry[] = [];
 let currentPage = 0;
+let localCourseStatusTimeoutId: number | null = null;
+
+const localCourseDeleteState: {
+    courseId: string | null;
+    courseTitle: string;
+    isDeleting: boolean;
+    triggerButton: HTMLButtonElement | null;
+} = {
+    courseId: null,
+    courseTitle: '',
+    isDeleting: false,
+    triggerButton: null,
+};
+
+type DeleteModalElements = {
+    overlay: HTMLElement;
+    message: HTMLElement;
+    error: HTMLElement;
+    cancelButton: HTMLButtonElement;
+    confirmButton: HTMLButtonElement;
+};
+
+function getDeleteModalElements(): DeleteModalElements | null {
+    const overlay = document.getElementById('delete-course-modal') as HTMLElement | null;
+    const message = document.getElementById('delete-course-modal-message') as HTMLElement | null;
+    const error = document.getElementById('delete-course-modal-error') as HTMLElement | null;
+    const cancelButton = document.getElementById('delete-course-cancel') as HTMLButtonElement | null;
+    const confirmButton = document.getElementById('delete-course-confirm') as HTMLButtonElement | null;
+
+    if (!overlay || !message || !error || !cancelButton || !confirmButton) {
+        return null;
+    }
+
+    return {
+        overlay,
+        message,
+        error,
+        cancelButton,
+        confirmButton,
+    };
+}
+
+function isDeleteModalOpen(): boolean {
+    const elements = getDeleteModalElements();
+    if (!elements) {
+        return false;
+    }
+
+    return !elements.overlay.hasAttribute('hidden');
+}
+
+function setLocalCourseStatus(message: string, isError = false): void {
+    const status = document.getElementById('local-course-status') as HTMLElement | null;
+    if (!status) return;
+
+    if (localCourseStatusTimeoutId !== null) {
+        window.clearTimeout(localCourseStatusTimeoutId);
+        localCourseStatusTimeoutId = null;
+    }
+
+    status.textContent = message;
+    status.hidden = message.length === 0;
+    status.classList.toggle('local-course-status-error', isError);
+
+    if (message.length > 0) {
+        localCourseStatusTimeoutId = window.setTimeout(() => {
+            status.hidden = true;
+            status.textContent = '';
+            status.classList.remove('local-course-status-error');
+            localCourseStatusTimeoutId = null;
+        }, 5000);
+    }
+}
+
+function syncDeleteModalState(): void {
+    const elements = getDeleteModalElements();
+    if (!elements) {
+        return;
+    }
+
+    elements.cancelButton.disabled = localCourseDeleteState.isDeleting;
+    elements.confirmButton.disabled = localCourseDeleteState.isDeleting || !localCourseDeleteState.courseId;
+    elements.confirmButton.textContent = localCourseDeleteState.isDeleting ? 'Deleting...' : 'Delete';
+}
+
+function closeDeleteCourseModal(restoreFocus = true): void {
+    const elements = getDeleteModalElements();
+    if (!elements || localCourseDeleteState.isDeleting) {
+        return;
+    }
+
+    elements.overlay.setAttribute('hidden', '');
+    elements.error.hidden = true;
+    elements.error.textContent = '';
+
+    const previousTrigger = localCourseDeleteState.triggerButton;
+    localCourseDeleteState.courseId = null;
+    localCourseDeleteState.courseTitle = '';
+    localCourseDeleteState.triggerButton = null;
+
+    syncDeleteModalState();
+
+    if (restoreFocus && previousTrigger && previousTrigger.isConnected) {
+        previousTrigger.focus();
+    }
+}
+
+function openDeleteCourseModal(courseId: string, courseTitle: string, triggerButton: HTMLButtonElement): void {
+    const elements = getDeleteModalElements();
+    if (!elements) {
+        return;
+    }
+
+    localCourseDeleteState.courseId = courseId;
+    localCourseDeleteState.courseTitle = courseTitle;
+    localCourseDeleteState.triggerButton = triggerButton;
+    localCourseDeleteState.isDeleting = false;
+
+    elements.message.textContent = `Delete "${courseTitle}"? This action cannot be undone.`;
+    elements.error.hidden = true;
+    elements.error.textContent = '';
+    elements.overlay.removeAttribute('hidden');
+    syncDeleteModalState();
+    elements.confirmButton.focus();
+}
+
+async function refreshLocalCourses(): Promise<void> {
+    const summaries = await listLocalCourses();
+    renderLocalCourses(summaries);
+}
+
+async function confirmDeleteLocalCourse(): Promise<void> {
+    const elements = getDeleteModalElements();
+    if (!elements || !localCourseDeleteState.courseId || localCourseDeleteState.isDeleting) {
+        return;
+    }
+
+    localCourseDeleteState.isDeleting = true;
+    elements.error.hidden = true;
+    elements.error.textContent = '';
+    syncDeleteModalState();
+
+    const courseId = localCourseDeleteState.courseId;
+    const courseTitle = localCourseDeleteState.courseTitle || courseId.toUpperCase();
+
+    try {
+        const deleted = await deleteLocalCourse(courseId);
+        await refreshLocalCourses();
+        closeDeleteCourseModal();
+
+        if (deleted) {
+            setLocalCourseStatus(`Deleted "${courseTitle}".`);
+        } else {
+            setLocalCourseStatus(`"${courseTitle}" was already missing.`, true);
+        }
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        elements.error.textContent = `Could not delete course: ${message}`;
+        elements.error.hidden = false;
+        setLocalCourseStatus('Could not delete course.', true);
+    } finally {
+        localCourseDeleteState.isDeleting = false;
+        syncDeleteModalState();
+    }
+}
 
 function shouldSkipStartSplash(): boolean {
     const params = new URLSearchParams(window.location.search);
-    return params.get('from') === 'editor';
+    const from = params.get('from');
+    return from === 'editor' || from === 'timer';
 }
 
 function hideStartSplashImmediately(): void {
@@ -272,7 +438,15 @@ function renderLocalCourses(summaries: CourseSummary[]): void {
         editLink.textContent = 'Edit';
         editLink.setAttribute('aria-label', `Edit course ${title}`);
 
-        actions.append(runLink, editLink);
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'course-card-action course-card-action-delete';
+        deleteButton.textContent = 'Delete';
+        deleteButton.dataset.deleteCourseId = summary.id;
+        deleteButton.dataset.deleteCourseTitle = title;
+        deleteButton.setAttribute('aria-label', `Delete course ${title}`);
+
+        actions.append(runLink, editLink, deleteButton);
         card.append(primaryLink, actions);
         grid.appendChild(card);
     }
@@ -384,6 +558,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     const splashController = skipSplash ? null : createStartSplashController(Date.now());
     document.getElementById('new-course-btn')?.addEventListener('click', showNewCourseDialog);
 
+    const localCourseGrid = document.getElementById('local-course-grid') as HTMLElement | null;
+    localCourseGrid?.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement | null;
+        if (!target) {
+            return;
+        }
+
+        const deleteButton = target.closest('button[data-delete-course-id]') as HTMLButtonElement | null;
+        if (!deleteButton) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const courseId = deleteButton.dataset.deleteCourseId?.trim();
+        if (!courseId) {
+            return;
+        }
+
+        const fallbackTitle = courseId.toUpperCase();
+        const courseTitle = deleteButton.dataset.deleteCourseTitle?.trim() || fallbackTitle;
+        openDeleteCourseModal(courseId, courseTitle, deleteButton);
+    });
+
+    const deleteModalElements = getDeleteModalElements();
+    if (deleteModalElements) {
+        deleteModalElements.cancelButton.addEventListener('click', () => {
+            closeDeleteCourseModal();
+        });
+
+        deleteModalElements.confirmButton.addEventListener('click', async () => {
+            await confirmDeleteLocalCourse();
+        });
+
+        deleteModalElements.overlay.addEventListener('click', (event) => {
+            if (event.target === deleteModalElements.overlay) {
+                closeDeleteCourseModal();
+            }
+        });
+    }
+
     // Fetch local and GitHub course lists together so the start screen renders as one update.
     const [localResult, githubResult] = await Promise.allSettled([
         listLocalCourses(),
@@ -407,7 +622,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isDeleteModalOpen()) {
+            e.preventDefault();
+            closeDeleteCourseModal();
+            return;
+        }
+
         if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+        if (isDeleteModalOpen()) return;
         if (allCourses.length <= PAGE_SIZE) return;
 
         if (e.key === 'ArrowLeft' && currentPage > 0) {

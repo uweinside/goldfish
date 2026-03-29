@@ -463,6 +463,17 @@ body.paused #timer {
     transform: translateY(-1px);
 }
 
+.control-btn-danger {
+    border-color: rgba(248, 113, 113, 0.55);
+    color: #fecaca;
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.control-btn-danger:hover {
+    border-color: rgba(248, 113, 113, 0.8);
+    background: rgba(248, 113, 113, 0.16);
+}
+
 .control-btn-exit {
     margin-left: auto;
 }
@@ -1185,6 +1196,16 @@ html.skip-start-splash .start-splash {
 .course-card-action-edit:hover {
     border-color: rgba(251, 191, 36, 0.75);
     background: rgba(251, 191, 36, 0.12);
+}
+
+.course-card-action-delete {
+    border-color: rgba(248, 113, 113, 0.52);
+    color: #fca5a5;
+}
+
+.course-card-action-delete:hover {
+    border-color: rgba(248, 113, 113, 0.78);
+    background: rgba(248, 113, 113, 0.12);
 }
 
 .course-card:hover {
@@ -2310,6 +2331,21 @@ body.editor-resizing {
     color: var(--text-muted);
 }
 
+.local-course-status {
+    font-size: 0.84rem;
+    color: #86efac;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid rgba(134, 239, 172, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+}
+
+.local-course-status-error {
+    color: #fecaca;
+    border-color: rgba(248, 113, 113, 0.35);
+    background: rgba(248, 113, 113, 0.12);
+}
+
 .start-section-label {
     width: 100%;
     max-width: 64rem;
@@ -2396,6 +2432,10 @@ body.editor-resizing {
     border-radius: 8px;
     background: rgba(248, 113, 113, 0.1);
     border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+#delete-course-modal .new-course-error {
+    margin-top: 0.25rem;
 }
 
 .new-course-actions {
