@@ -1,88 +1,162 @@
-# Goldfish
+# CuePilot (codename: goldfish)
 
-A clean ASP.NET Core 8.0 Razor Pages + Vanilla TypeScript web application.
+A **glanceable presentation timing assistant** for instructors delivering structured sessions. Built as a Tauri v2 native desktop app optimized for secondary monitors.
+
+## What It Does
+
+CuePilot provides real-time situational awareness during presentations:
+
+- **Where am I?** — Current chapter and section
+- **How much time?** — Countdown timer with overtime tracking
+- **What's next?** — Upcoming section preview
+- **Am I on track?** — Schedule drift indicator
+
+The UI is designed for **<1 second visual parsing** with **zero cognitive overhead**.
+
+## Screenshots
+
+| Course Selection | Timer View | Course Editor |
+|------------------|------------|---------------|
+| Grid of available courses from local storage and GitHub | Two-panel glanceable timer with instructions | Three-panel editor for authoring courses |
 
 ## Project Structure
 
 ```
 goldfish/
-├── Pages/                 # ASP.NET Razor Pages
-│   ├── Shared/           # Shared layout and components
-│   ├── Index.cshtml      # Home page
-│   ├── Privacy.cshtml    # Privacy policy page
-│   └── Error.cshtml      # Error page
-├── src/                  # TypeScript source files
-│   └── main.ts          # Entry point
-├── wwwroot/             # Static files (served to browser)
-│   ├── css/            # Compiled and custom CSS
-│   └── js/             # Compiled JavaScript from TypeScript
-├── goldfish.csproj      # Project file
-├── Program.cs           # Application startup configuration
-├── package.json         # NPM dependencies and scripts
-├── tsconfig.json        # TypeScript configuration
-├── appsettings.json     # App configuration
-└── appsettings.Development.json
+├── index.html              # Course selection page
+├── timer.html              # Presentation timer page
+├── editor.html             # Course authoring page
+├── vite.config.ts          # Vite multi-page config
+├── package.json            # Dependencies and scripts
+├── course.schema.json      # Course file JSON schema
+│
+├── src/                    # TypeScript application code
+│   ├── start.ts            # Course selection logic
+│   ├── main.ts             # Timer page logic
+│   ├── editor.ts           # Course editor logic
+│   ├── models/
+│   │   ├── types.ts        # Core data types (Timeline, Chapter, Section, AppState)
+│   │   └── course-authoring.ts  # Backend API types
+│   ├── core/
+│   │   ├── state.ts        # Mutable app state management
+│   │   ├── timer.ts        # Pure time calculation functions
+│   │   ├── data-loader.ts  # Course loading (GitHub + local)
+│   │   └── course-authoring-api.ts  # Tauri IPC wrapper
+│   └── ui/
+│       └── renderer.ts     # DOM rendering for timer view
+│
+├── wwwroot/                # Static assets
+│   └── css/site.css        # All styling
+│
+├── src-tauri/              # Tauri / Rust backend
+│   ├── tauri.conf.json     # App config and window settings
+│   ├── src/
+│   │   ├── main.rs         # Rust entry point
+│   │   ├── lib.rs          # Tauri builder setup
+│   │   ├── commands.rs     # IPC command handlers
+│   │   ├── course_model.rs # Course data structures
+│   │   └── course_store.rs # File I/O operations
+│   └── courses/            # Local course storage
+│
+└── courses/                # Development course files (Vite-served)
 ```
 
 ## Getting Started
 
 ### Prerequisites
-- .NET 8.0 SDK
-- Node.js (for TypeScript compilation)
+
+- Node.js 18+
+- Rust toolchain (rustup with `x86_64-pc-windows-gnu` target)
+- Tauri CLI
 
 ### Setup
 
-1. Restore .NET dependencies:
-```bash
-dotnet restore
-```
-
-2. Install Node.js dependencies:
 ```bash
 npm install
 ```
 
-3. Build TypeScript:
-```bash
-npm run build
-```
-
 ### Development
 
-Run the application with TypeScript watch mode:
-```bash
-npm run dev
-```
-
-This will:
-- Watch TypeScript files and compile on changes
-- Run the ASP.NET Core application with dotnet watch
-
-Or run them separately:
-```bash
-npm run watch    # In one terminal
-dotnet run       # In another terminal
-```
-
-### Production Build
+Launch the app with hot-reload:
 
 ```bash
-npm run build
-dotnet publish -c Release
+npm run tauri:dev
 ```
+
+This starts Vite dev server on `localhost:1420` and launches the Tauri native window.
+
+### Build
+
+Create a production executable:
+
+```bash
+npm run tauri:build
+```
+
+Outputs to `src-tauri/target/release/`.
 
 ## Features
 
-- ASP.NET Core 8.0 Razor Pages
-- Vanilla TypeScript (no frameworks)
-- Static file serving from `wwwroot/`
-- Development configuration
+### Timer View
 
-## Adding Bootstrap
+- **Large countdown timer** — primary visual element
+- **Progress bar** — visual segment completion
+- **Color-coded states** — green (on track), yellow (wrapping up), red (overtime)
+- **Schedule drift indicator** — shows ahead/behind schedule
+- **Right panel** — instructions and talking points for current section
+- **Keyboard controls** — Space (pause), ←/→ (navigate chapters)
 
-To add Bootstrap, run:
-```bash
-npm install bootstrap@5
+### Course Editor
+
+- **Three-panel layout** — Chapters | Sections | Section Details
+- **Drag-and-drop reordering** — powered by SortableJS
+- **Auto-save** — changes persist via Tauri backend
+- **Validation** — enforces schema constraints
+
+### Course Sources
+
+- **Local courses** — stored in `src-tauri/courses/`, managed by Rust backend
+- **GitHub courses** — fetched from `uweinside/goldfish-data` repository
+
+## Data Model
+
+```typescript
+interface Section {
+  title: string;
+  type: 'Narration' | 'Demo' | 'Prompt' | 'Rule';
+  durationSeconds: number;
+  instructions: string;
+  transcript?: string;
+}
+
+interface Chapter {
+  title: string;
+  sections: Section[];
+}
+
+interface Timeline {
+  title: string;
+  chapters: Chapter[];
+}
 ```
 
-Then update `Pages/Shared/_Layout.cshtml` to reference Bootstrap CSS and JS.
+## Keyboard Shortcuts (Timer)
+
+| Key | Action |
+|-----|--------|
+| `Space` | Pause / Resume |
+| `→` | Next chapter |
+| `←` | Previous chapter |
+| `Escape` | Close notes panel |
+
+## Tech Stack
+
+- **Runtime**: Tauri v2 (Rust backend + WebView frontend)
+- **Frontend**: Vanilla TypeScript + Vite
+- **Styling**: Custom CSS (no framework)
+- **Backend**: Rust with serde for JSON handling
+- **Target**: Windows (MinGW/GNU toolchain)
+
+## License
+
+© 2026 Uwe Baumann

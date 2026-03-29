@@ -1,7 +1,7 @@
 {
   "name": "goldfish",
   "version": "1.0.0",
-  "description": "Goldfish - ASP.NET Core 8.0 Razor Pages with TypeScript",
+  "description": "CuePilot - Glanceable presentation timing assistant (Tauri v2 app)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
