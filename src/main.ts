@@ -1,4 +1,4 @@
-import { goldfishState, advanceSegment, previousSegment, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection, navigateToSectionInChapter } from './core/state.js';
+import { goldfishState, advanceSegment, previousSegment, advanceChapter, previousChapter, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection, navigateToSectionInChapter } from './core/state.js';
 import { render } from './ui/renderer.js';
 import { loadCourse } from './core/data-loader.js';
 import { Timeline } from './models/types.js';
@@ -34,11 +34,11 @@ async function init(): Promise<void> {
                 break;
             case 'ArrowRight':
                 e.preventDefault();
-                advanceSegment(timeline);
+                advanceChapter(timeline);
                 break;
             case 'ArrowLeft':
                 e.preventDefault();
-                previousSegment(timeline);
+                previousChapter(timeline);
                 break;
             case 'Escape':
                 if (goldfishState.rightPanelMode === 'notes') {
@@ -61,7 +61,7 @@ async function init(): Promise<void> {
     const btnNext = document.getElementById('btn-next');
 
     btnPrev?.addEventListener('click', () => {
-        previousSegment(timeline);
+        previousChapter(timeline);
     });
 
     btnPause?.addEventListener('click', () => {
@@ -69,7 +69,7 @@ async function init(): Promise<void> {
     });
 
     btnNext?.addEventListener('click', () => {
-        advanceSegment(timeline);
+        advanceChapter(timeline);
     });
 
     const btnExit = document.getElementById('btn-exit');

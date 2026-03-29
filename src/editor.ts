@@ -320,7 +320,7 @@ function renderSectionList(timeline: Timeline): void {
     }
 
     if (chapter.sections.length === 0) {
-        elSectionsList.innerHTML = '<div class="editor-info-editor-empty">No sections yet. Add one to define the chapter flow.</div>';
+        elSectionsList.innerHTML = '<div class="editor-info-editor-empty">No sections yet. Add one to build the outline.</div>';
         return;
     }
 

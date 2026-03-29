@@ -78,6 +78,20 @@ export function previousSegment(timeline: Timeline): void {
     }
 }
 
+export function advanceChapter(timeline: Timeline): void {
+    const nextChapterIndex = goldfishState.currentChapterIndex + 1;
+    if (nextChapterIndex < timeline.chapters.length) {
+        moveToPosition({ chapterIndex: nextChapterIndex, sectionIndex: 0 }, timeline);
+    }
+}
+
+export function previousChapter(timeline: Timeline): void {
+    const prevChapterIndex = goldfishState.currentChapterIndex - 1;
+    if (prevChapterIndex >= 0) {
+        moveToPosition({ chapterIndex: prevChapterIndex, sectionIndex: 0 }, timeline);
+    }
+}
+
 export function openNotesPanel(): void {
     goldfishState.rightPanelMode = 'notes';
 }

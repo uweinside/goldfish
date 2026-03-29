@@ -203,7 +203,7 @@ function renderSectionsPanel(timeline: Timeline, state: AppState, canOpenTranscr
 
     elPanelRightHeader.innerHTML = `
         <div class="notes-top-row">
-            <span class="notes-mode-label">Sections</span>
+            <span class="notes-mode-label">Outline View</span>
             ${canOpenTranscriptMode ? '<button id="outline-view-transcript" class="outline-view-transcript-btn" type="button" aria-label="Switch to Transcript View"><span>Transcript</span><span aria-hidden="true">&rarr;</span></button>' : ''}
         </div>
     `;
