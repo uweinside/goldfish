@@ -35,11 +35,6 @@ function nextAnimationFrame(): Promise<void> {
 
 function createStartSplashController(startedAt: number): { dismiss: () => Promise<void> } {
     const splash = document.getElementById('startup-splash') as HTMLElement | null;
-    const logo = document.getElementById('startup-splash-logo') as HTMLImageElement | null;
-
-    if (logo) {
-        logo.src = new URL('../src-tauri/icons/icon.png', import.meta.url).href;
-    }
 
     let dismissed = false;
     const dismiss = async (): Promise<void> => {
