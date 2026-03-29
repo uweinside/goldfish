@@ -4,7 +4,7 @@ import { CourseSummary } from './models/course-authoring.js';
 import { Timeline } from './models/types.js';
 
 const PAGE_SIZE = 6;
-const START_SPLASH_MIN_VISIBLE_MS = 1200;
+const START_SPLASH_MIN_VISIBLE_MS = 700;
 const START_SPLASH_EXIT_MS = 380;
 let allCourses: CourseEntry[] = [];
 let currentPage = 0;
@@ -29,6 +29,10 @@ function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function nextAnimationFrame(): Promise<void> {
+    return new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
 function createStartSplashController(startedAt: number): { dismiss: () => Promise<void> } {
     const splash = document.getElementById('startup-splash') as HTMLElement | null;
     const logo = document.getElementById('startup-splash-logo') as HTMLImageElement | null;
@@ -48,8 +52,11 @@ function createStartSplashController(startedAt: number): { dismiss: () => Promis
             await delay(remaining);
         }
 
+        // Let browser commit the newly rendered start page before fading out the overlay.
+        await nextAnimationFrame();
+        await nextAnimationFrame();
+
         splash.classList.add('start-splash-exit');
-        document.body.classList.remove('start-splash-active');
 
         await new Promise<void>((resolve) => {
             let settled = false;
@@ -59,6 +66,7 @@ function createStartSplashController(startedAt: number): { dismiss: () => Promis
                 splash.removeEventListener('transitionend', onTransitionEnd);
                 splash.hidden = true;
                 splash.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('start-splash-active');
                 resolve();
             };
 
