@@ -501,6 +501,20 @@ body.paused #timer {
     box-shadow: var(--shadow);
 }
 
+.info-section[data-section-index] {
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.info-section[data-section-index]:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.info-section[data-section-index]:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.72);
+    outline-offset: 2px;
+}
+
 .info-section-notes-enabled {
     cursor: pointer;
 }

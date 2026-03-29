@@ -212,8 +212,10 @@ function renderSectionsPanel(timeline: Timeline, state: AppState, canOpenTranscr
         .map((chapterSection, index) => {
             const isCurrent = index === state.currentSectionIndex;
             const toneClass = getSectionToneClass(index);
+            const sectionHasTranscript = typeof chapterSection.transcript === 'string' && chapterSection.transcript.trim().length > 0;
+            const notesClass = sectionHasTranscript ? ' info-section-notes-enabled' : '';
             return `
-                <div class="info-section ${toneClass}${isCurrent ? ' info-section-current' : ''}">
+                <div class="info-section ${toneClass}${isCurrent ? ' info-section-current' : ''}${notesClass}" data-section-index="${index}" tabindex="0" role="button" aria-label="View section ${index + 1}: ${escapeHtml(chapterSection.title)}${sectionHasTranscript ? ' (has transcript)' : ''}">
                     <div class="info-label-row">
                         <h3 class="info-label">${escapeHtml(`${index + 1}. ${chapterSection.title}`)}</h3>
                         ${isCurrent ? '<span class="notes-marker" aria-hidden="true">Now</span>' : ''}
@@ -294,7 +296,9 @@ export function render(timeline: Timeline, state: AppState): void {
         state.rightPanelMode,
     ].join('|');
 
-    if (renderKey !== lastRenderKey) {
+    const rightPanelChanged = renderKey !== lastRenderKey;
+
+    if (rightPanelChanged) {
         const panels: (HTMLElement | null)[] = [elLeftPanel, elRightPanel];
         for (const panel of panels) {
             if (!panel) continue;
@@ -390,9 +394,12 @@ export function render(timeline: Timeline, state: AppState): void {
     elRightPanel?.classList.toggle('panel-notes-available', hasAnyTranscript || state.rightPanelMode === 'notes');
     elRightPanel?.classList.toggle('panel-notes-open', state.rightPanelMode === 'notes');
 
-    if (state.rightPanelMode === 'notes') {
-        renderNotesPanel(timeline, state, section);
-    } else {
-        renderSectionsPanel(timeline, state, hasAnyTranscript);
+    // Only re-render right panel content when state changes to avoid flicker and preserve interactions
+    if (rightPanelChanged) {
+        if (state.rightPanelMode === 'notes') {
+            renderNotesPanel(timeline, state, section);
+        } else {
+            renderSectionsPanel(timeline, state, hasAnyTranscript);
+        }
     }
 }

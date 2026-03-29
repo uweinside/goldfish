@@ -54,6 +54,14 @@ function moveToPosition(position: TimelinePosition, timeline: Timeline): void {
     goldfishState.rightPanelMode = 'info';
 }
 
+export function navigateToSectionInChapter(sectionIndex: number, timeline: Timeline): void {
+    const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+    if (sectionIndex < 0 || sectionIndex >= chapter.sections.length) {
+        return;
+    }
+    moveToPosition({ chapterIndex: goldfishState.currentChapterIndex, sectionIndex }, timeline);
+}
+
 export function advanceSegment(timeline: Timeline): void {
     const positions = flattenPositions(timeline);
     const current = currentFlatIndex(timeline);

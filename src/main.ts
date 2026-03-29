@@ -1,4 +1,4 @@
-import { goldfishState, advanceSegment, previousSegment, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection } from './core/state.js';
+import { goldfishState, advanceSegment, previousSegment, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection, navigateToSectionInChapter } from './core/state.js';
 import { render } from './ui/renderer.js';
 import { loadCourse } from './core/data-loader.js';
 import { Timeline } from './models/types.js';
@@ -120,9 +120,21 @@ async function init(): Promise<void> {
             return;
         }
 
-        const notesSection = target.closest('.info-section-notes-enabled') as HTMLElement | null;
-        if (notesSection) {
-            openNotesPanel();
+        // Handle section card clicks to navigate and optionally open transcript
+        const sectionCard = target.closest('.info-section[data-section-index]') as HTMLElement | null;
+        if (sectionCard) {
+            const sectionIndexStr = sectionCard.dataset.sectionIndex;
+            if (sectionIndexStr !== undefined) {
+                const sectionIndex = parseInt(sectionIndexStr, 10);
+                if (!isNaN(sectionIndex)) {
+                    navigateToSectionInChapter(sectionIndex, timeline);
+                    const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+                    const targetSection = chapter.sections[sectionIndex];
+                    if (typeof targetSection?.transcript === 'string' && targetSection.transcript.trim().length > 0) {
+                        openNotesPanel();
+                    }
+                }
+            }
             return;
         }
 
@@ -160,13 +172,22 @@ async function init(): Promise<void> {
             return;
         }
 
-        const notesSection = target.closest('.info-section-notes-enabled') as HTMLElement | null;
-        if (!notesSection) {
-            return;
+        const sectionCard = target.closest('.info-section[data-section-index]') as HTMLElement | null;
+        if (sectionCard) {
+            keyboardEvent.preventDefault();
+            const sectionIndexStr = sectionCard.dataset.sectionIndex;
+            if (sectionIndexStr !== undefined) {
+                const sectionIndex = parseInt(sectionIndexStr, 10);
+                if (!isNaN(sectionIndex)) {
+                    navigateToSectionInChapter(sectionIndex, timeline);
+                    const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+                    const targetSection = chapter.sections[sectionIndex];
+                    if (typeof targetSection?.transcript === 'string' && targetSection.transcript.trim().length > 0) {
+                        openNotesPanel();
+                    }
+                }
+            }
         }
-
-        keyboardEvent.preventDefault();
-        openNotesPanel();
     });
 
     tick(); // render immediately before first interval
