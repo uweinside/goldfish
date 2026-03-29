@@ -297,15 +297,7 @@ export function render(timeline: Timeline, state: AppState): void {
     ].join('|');
 
     const rightPanelChanged = renderKey !== lastRenderKey;
-
     if (rightPanelChanged) {
-        const panels: (HTMLElement | null)[] = [elLeftPanel, elRightPanel];
-        for (const panel of panels) {
-            if (!panel) continue;
-            panel.classList.remove('panel-crossfade');
-            void panel.offsetWidth;
-            panel.classList.add('panel-crossfade');
-        }
         lastRenderKey = renderKey;
     }
 
@@ -353,6 +345,16 @@ export function render(timeline: Timeline, state: AppState): void {
         const textEl = elPauseButton.querySelector('.control-text');
         if (symbolEl) symbolEl.textContent = pauseSymbol;
         if (textEl) textEl.textContent = pauseLabel;
+    }
+
+    // Enable/disable prev/next buttons based on chapter position
+    const prevBtn = document.getElementById('btn-prev') as HTMLButtonElement | null;
+    const nextBtn = document.getElementById('btn-next') as HTMLButtonElement | null;
+    if (prevBtn) {
+        prevBtn.disabled = state.currentChapterIndex === 0;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = state.currentChapterIndex >= timeline.chapters.length - 1;
     }
 
     const nextChapter = timeline.chapters[state.currentChapterIndex + 1];
