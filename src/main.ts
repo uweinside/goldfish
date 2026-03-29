@@ -1,4 +1,4 @@
-import { goldfishState, advanceSegment, previousSegment, advanceChapter, previousChapter, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection, navigateToSectionInChapter } from './core/state.js';
+import { goldfishState, advanceSegment, previousSegment, advanceChapter, previousChapter, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, navigateToSectionInChapter } from './core/state.js';
 import { render } from './ui/renderer.js';
 import { loadCourse } from './core/data-loader.js';
 import { Timeline } from './models/types.js';
@@ -65,17 +65,31 @@ async function init(): Promise<void> {
     const btnPause = document.getElementById('btn-pause');
     const btnNext = document.getElementById('btn-next');
 
-    btnPrev?.addEventListener('click', () => {
+    const handlePreviousChapter = (): void => {
         previousChapter(timeline);
-    });
+    };
+
+    const handleNextChapter = (): void => {
+        advanceChapter(timeline);
+    };
+
+    const handlePreviousTranscriptSection = (): void => {
+        previousSegment(timeline);
+        openNotesPanel();
+    };
+
+    const handleNextTranscriptSection = (): void => {
+        advanceSegment(timeline);
+        openNotesPanel();
+    };
+
+    btnPrev?.addEventListener('click', handlePreviousChapter);
 
     btnPause?.addEventListener('click', () => {
         pauseResume(timeline);
     });
 
-    btnNext?.addEventListener('click', () => {
-        advanceChapter(timeline);
-    });
+    btnNext?.addEventListener('click', handleNextChapter);
 
     const btnExit = document.getElementById('btn-exit');
     const exitModal = document.getElementById('exit-modal');
@@ -115,13 +129,13 @@ async function init(): Promise<void> {
 
         const notesPrev = target.closest('#notes-prev');
         if (notesPrev) {
-            previousNotesSection(timeline);
+            handlePreviousTranscriptSection();
             return;
         }
 
         const notesNext = target.closest('#notes-next');
         if (notesNext) {
-            advanceNotesSection(timeline);
+            handleNextTranscriptSection();
             return;
         }
 

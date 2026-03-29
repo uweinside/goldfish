@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Timeline } from './models/types.js';
-import { normalizeTimelineAndSelection } from './editor.js';
+import { formatSessionDuration, normalizeTimelineAndSelection } from './editor.js';
 
 function createTimeline(chapters: Array<{ title: string; sections: Array<{ title: string }> }>): Timeline {
     return {
@@ -89,5 +89,17 @@ describe('normalizeTimelineAndSelection', () => {
         normalizeTimelineAndSelection(timeline, 0, null);
 
         expect(timeline.title).toBe('Untitled Course');
+    });
+});
+
+describe('formatSessionDuration', () => {
+    it('returns mm:ss for durations below one hour', () => {
+        expect(formatSessionDuration(59)).toBe('00:59');
+        expect(formatSessionDuration(3599)).toBe('59:59');
+    });
+
+    it('returns hh:mm:ss for durations of one hour or more', () => {
+        expect(formatSessionDuration(3600)).toBe('01:00:00');
+        expect(formatSessionDuration(3661)).toBe('01:01:01');
     });
 });

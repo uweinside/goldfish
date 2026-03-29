@@ -166,6 +166,21 @@ function formatMinutesSeconds(totalSeconds: number): string {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
+export function formatSessionDuration(totalSeconds: number): string {
+    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const seconds = safeSeconds % 60;
+
+    if (hours > 0) {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
+            .toString()
+            .padStart(2, '0')}`;
+    }
+
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 function totalDuration(timeline: Timeline): number {
     return timeline.chapters
         .flatMap(chapter => chapter.sections)
@@ -768,7 +783,7 @@ function render(timeline: Timeline): void {
         elTotalSegments.textContent = `${timeline.chapters.length} chapter${timeline.chapters.length === 1 ? '' : 's'} · ${sectionCount} section${sectionCount === 1 ? '' : 's'}`;
     }
     if (elTotalDuration) {
-        elTotalDuration.textContent = formatMinutesSeconds(totalDuration(timeline));
+        elTotalDuration.textContent = formatSessionDuration(totalDuration(timeline));
     }
 
     renderChapterList(timeline);
@@ -835,7 +850,7 @@ function handleEditorInput(event: Event): void {
                 if (duration > 0) {
                     section.durationSeconds = duration;
                     if (elTotalDuration) {
-                        elTotalDuration.textContent = formatMinutesSeconds(totalDuration(timeline));
+                        elTotalDuration.textContent = formatSessionDuration(totalDuration(timeline));
                     }
                     saveCourse();
                     renderSectionList(timeline);

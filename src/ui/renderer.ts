@@ -241,12 +241,8 @@ function renderNotesPanel(timeline: Timeline, state: AppState, section: Section)
         p => p.chapterIndex === state.currentChapterIndex && p.sectionIndex === state.currentSectionIndex,
     );
 
-    const hasPrev = positions.slice(0, Math.max(0, currentIndex)).some(
-        p => (timeline.chapters[p.chapterIndex].sections[p.sectionIndex].transcript || '').trim().length > 0,
-    );
-    const hasNext = positions.slice(currentIndex + 1).some(
-        p => (timeline.chapters[p.chapterIndex].sections[p.sectionIndex].transcript || '').trim().length > 0,
-    );
+    const hasPrev = currentIndex > 0;
+    const hasNext = currentIndex >= 0 && currentIndex < positions.length - 1;
 
     elPanelRightHeader.innerHTML = `
         <div class="notes-top-row">

@@ -250,13 +250,19 @@ function totalPages(): number {
     return Math.max(1, Math.ceil(allCourses.length / PAGE_SIZE));
 }
 
-function formatDuration(totalSeconds: number): string {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
+export function formatDuration(totalSeconds: number): string {
+    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const seconds = safeSeconds % 60;
+
     if (hours > 0) {
-        return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
+            .toString()
+            .padStart(2, '0')}`;
     }
-    return `${minutes}m`;
+
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 function renderPage(page: number): void {
