@@ -1,4 +1,5 @@
 import { Timeline } from '../models/types.js';
+import { loadLocalCourse } from './course-authoring-api.js';
 
 export interface CourseEntry {
     id: string;
@@ -80,8 +81,14 @@ export async function listCourses(): Promise<CourseEntry[]> {
  * Load a single course by ID from the GitHub repo.
  */
 export async function loadCourse(courseId: string): Promise<Timeline> {
-    const url = `${RAW_BASE}${encodeURIComponent(courseId)}.json`;
-    return fetchTimeline(url, courseId);
+    // In the Tauri app, user-authored courses live in local storage.
+    // Try local first, then fall back to GitHub-hosted courses.
+    try {
+        return await loadLocalCourse(courseId);
+    } catch {
+        const url = `${RAW_BASE}${encodeURIComponent(courseId)}.json`;
+        return fetchTimeline(url, courseId);
+    }
 }
 
 async function fetchTimeline(url: string, sourceId?: string): Promise<Timeline> {

@@ -1,76 +1,55 @@
 {
-  "title": "My Test COurse",
+  "title": "My Test Course",
   "chapters": [
     {
-      "title": "Introduction",
+      "title": "Speaker Introduction X",
       "sections": [
         {
-          "title": "New Section",
+          "title": "Overview Blue",
           "type": "Narration",
           "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
+          "instructions": "Instructions X Blue",
+          "transcript": "Transcript X Blue"
         },
         {
-          "title": "New Section",
-          "type": "Narration",
-          "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
-        },
-        {
-          "title": "Overview",
-          "type": "Narration",
-          "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
-        },
-        {
-          "title": "New Section",
-          "type": "Narration",
-          "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
-        },
-        {
-          "title": "New Section",
-          "type": "Narration",
-          "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
+          "title": "Demo Red",
+          "type": "Demo",
+          "durationSeconds": 240,
+          "instructions": "Instructions X Red",
+          "transcript": "Transcript X Red"
         }
       ]
     },
     {
-      "title": "New Chapter",
+      "title": "Session Introduction Y",
       "sections": [
         {
-          "title": "New Section",
+          "title": "Section A",
           "type": "Narration",
-          "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
+          "durationSeconds": 120,
+          "instructions": "Instructions A",
+          "transcript": "Transcript A"
         },
         {
-          "title": "New Section",
+          "title": "Section B",
           "type": "Narration",
-          "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
+          "durationSeconds": 180,
+          "instructions": "Instructions B",
+          "transcript": "Transcript B"
         },
         {
-          "title": "New Section",
+          "title": "Section C",
           "type": "Narration",
-          "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
+          "durationSeconds": 240,
+          "instructions": "Instructions C",
+          "transcript": "Transcript C"
         },
         {
-          "title": "New Section",
+          "title": "Section D",
           "type": "Narration",
           "durationSeconds": 300,
-          "instructions": "Add your instructions here.",
-          "transcript": null
+          "instructions": "Instructions D",
+          "transcript": "Transcript D"
         }
       ]
     }

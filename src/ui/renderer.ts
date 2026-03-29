@@ -39,8 +39,40 @@ function getCurrentSection(timeline: Timeline, state: AppState): Section {
     return timeline.chapters[state.currentChapterIndex].sections[state.currentSectionIndex];
 }
 
+function getCurrentChapter(timeline: Timeline, state: AppState): Timeline['chapters'][number] {
+    return timeline.chapters[state.currentChapterIndex];
+}
+
 function getCurrentChapterTitle(timeline: Timeline, state: AppState): string {
     return timeline.chapters[state.currentChapterIndex].title;
+}
+
+function getCurrentChapterTotalSeconds(timeline: Timeline, state: AppState): number {
+    return getCurrentChapter(timeline, state)
+        .sections
+        .reduce((sum, s) => sum + s.durationSeconds, 0);
+}
+
+function getCurrentChapterRemainingSeconds(timeline: Timeline, state: AppState): number {
+    const chapter = getCurrentChapter(timeline, state);
+    const currentSection = chapter.sections[state.currentSectionIndex];
+    const currentSectionRemaining = getSecondsRemaining(currentSection, state);
+
+    const futureSectionSeconds = chapter.sections
+        .slice(state.currentSectionIndex + 1)
+        .reduce((sum, section) => sum + section.durationSeconds, 0);
+
+    return currentSectionRemaining + futureSectionSeconds;
+}
+
+function getSectionToneClass(index: number): string {
+    if (index === 0) {
+        return 'info-section-primary';
+    }
+    if (index === 1) {
+        return 'info-section-secondary';
+    }
+    return 'info-section-tertiary';
 }
 
 function getNextPosition(timeline: Timeline, state: AppState): TimelinePosition | undefined {
@@ -164,24 +196,36 @@ function renderMarkdown(markdown: string): string {
     return htmlParts.join('');
 }
 
-function renderInfoPanel(section: Section, canOpenTranscriptMode: boolean): void {
+function renderSectionsPanel(timeline: Timeline, state: AppState, canOpenTranscriptMode: boolean): void {
+    const chapter = getCurrentChapter(timeline, state);
+    const section = chapter.sections[state.currentSectionIndex];
     const transcriptAvailable = typeof section.transcript === 'string' && section.transcript.trim().length > 0;
 
     elPanelRightHeader.innerHTML = `
         <div class="notes-top-row">
-            <span class="notes-mode-label">Outline View</span>
+            <span class="notes-mode-label">Sections</span>
             ${canOpenTranscriptMode ? '<button id="outline-view-transcript" class="outline-view-transcript-btn" type="button" aria-label="Switch to Transcript View"><span>Transcript</span><span aria-hidden="true">&rarr;</span></button>' : ''}
         </div>
     `;
 
+    const sectionCards = chapter.sections
+        .map((chapterSection, index) => {
+            const isCurrent = index === state.currentSectionIndex;
+            const toneClass = getSectionToneClass(index);
+            return `
+                <div class="info-section ${toneClass}${isCurrent ? ' info-section-current' : ''}">
+                    <div class="info-label-row">
+                        <h3 class="info-label">${escapeHtml(`${index + 1}. ${chapterSection.title}`)}</h3>
+                        ${isCurrent ? '<span class="notes-marker" aria-hidden="true">Now</span>' : ''}
+                    </div>
+                    <p class="chapter-section-meta">${escapeHtml(chapterSection.type)} · ${formatTime(chapterSection.durationSeconds)}</p>
+                </div>
+            `;
+        })
+        .join('');
+
     elInfoPanel.innerHTML = `
-        <div class="info-section info-section-primary${transcriptAvailable ? ' info-section-notes-enabled' : ''}" ${transcriptAvailable ? 'data-notes-enabled="true" role="button" tabindex="0"' : ''}>
-            <div class="info-label-row">
-                <h3 class="info-label">${escapeHtml(section.title)}</h3>
-                ${transcriptAvailable ? '<span class="notes-marker" aria-hidden="true">T</span>' : ''}
-            </div>
-            <div class="notes-block">${renderMarkdown(section.instructions || '')}</div>
-        </div>
+        ${sectionCards}
     `;
 }
 
@@ -239,6 +283,7 @@ function renderNotesPanel(timeline: Timeline, state: AppState, section: Section)
 }
 
 export function render(timeline: Timeline, state: AppState): void {
+    const chapter = getCurrentChapter(timeline, state);
     const section = getCurrentSection(timeline, state);
     const chapterTitle = getCurrentChapterTitle(timeline, state);
     const nextPosition = getNextPosition(timeline, state);
@@ -260,33 +305,34 @@ export function render(timeline: Timeline, state: AppState): void {
         lastRenderKey = renderKey;
     }
 
-    const secondsRemaining = getSecondsRemaining(section, state);
+    const chapterTotalSeconds = getCurrentChapterTotalSeconds(timeline, state);
+    const chapterSecondsRemaining = getCurrentChapterRemainingSeconds(timeline, state);
 
-    elTimer.textContent = formatTime(secondsRemaining);
-    elTitle.textContent = section.title;
-    elSegmentBadgeText.textContent = section.type.slice(0, 1).toUpperCase();
+    elTimer.textContent = formatTime(chapterSecondsRemaining);
+    elTitle.textContent = chapter.title;
+    elSegmentBadgeText.textContent = String(state.currentChapterIndex + 1);
 
-    const elapsed = (section.durationSeconds - Math.max(secondsRemaining, 0)) / section.durationSeconds;
+    const elapsed = (chapterTotalSeconds - Math.max(chapterSecondsRemaining, 0)) / chapterTotalSeconds;
     elProgressFill.style.width = `${Math.min(100, Math.max(0, elapsed * 100)).toFixed(2)}%`;
 
     const stateClass =
-        secondsRemaining < 0 ? 'state-over' :
-        secondsRemaining <= section.durationSeconds * 0.2 ? 'state-warn' :
+        chapterSecondsRemaining < 0 ? 'state-over' :
+        chapterSecondsRemaining <= chapterTotalSeconds * 0.2 ? 'state-warn' :
         'state-ok';
     STATE_CLASSES.forEach(c => document.body.classList.remove(c));
     document.body.classList.add(stateClass);
 
     const timerStateText =
         state.isPaused ? 'Paused' :
-        secondsRemaining < 0 ? 'Overtime' :
-        secondsRemaining <= section.durationSeconds * 0.2 ? 'Wrapping up' :
+        chapterSecondsRemaining < 0 ? 'Overtime' :
+        chapterSecondsRemaining <= chapterTotalSeconds * 0.2 ? 'Wrapping up' :
         'On track';
     elTimerState.textContent = timerStateText;
 
     const kickerStatus = state.isPaused
         ? (state.hasStarted ? 'paused' : 'ready')
         : 'in progress';
-    elSegmentKicker.textContent = `${chapterTitle} · ${section.type} · ${kickerStatus}`;
+    elSegmentKicker.textContent = `${timeline.title} · chapter ${state.currentChapterIndex + 1}/${timeline.chapters.length} · ${kickerStatus}`;
 
     if (state.isPaused) {
         document.body.classList.add('paused');
@@ -305,11 +351,11 @@ export function render(timeline: Timeline, state: AppState): void {
         if (textEl) textEl.textContent = pauseLabel;
     }
 
-    if (nextPosition) {
-        const nextSection = timeline.chapters[nextPosition.chapterIndex].sections[nextPosition.sectionIndex];
-        elNextSegment.textContent = nextSection.title;
+    const nextChapter = timeline.chapters[state.currentChapterIndex + 1];
+    if (nextChapter) {
+        elNextSegment.textContent = nextChapter.title;
     } else {
-        elNextSegment.textContent = 'Last section';
+        elNextSegment.textContent = 'Last chapter';
     }
 
     const sessionRemaining = state.hasStarted
@@ -347,6 +393,6 @@ export function render(timeline: Timeline, state: AppState): void {
     if (state.rightPanelMode === 'notes') {
         renderNotesPanel(timeline, state, section);
     } else {
-        renderInfoPanel(section, hasAnyTranscript);
+        renderSectionsPanel(timeline, state, hasAnyTranscript);
     }
 }

@@ -518,6 +518,20 @@ body.paused #timer {
 .info-section-secondary { background: rgba(255, 255, 255, 0.035); }
 .info-section-tertiary  { background: rgba(255, 255, 255, 0.025); }
 
+.info-section-current {
+    border-color: rgba(251, 191, 36, 0.45);
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.2), var(--shadow);
+}
+
+.chapter-section-meta {
+    margin-top: 0.55rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
 .info-label-row {
     display: flex;
     align-items: center;
