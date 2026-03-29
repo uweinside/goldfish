@@ -905,9 +905,104 @@ body.type-break   #segment-title { color: #d9d5cf; }
     .panel-right.panel-crossfade {
         animation: none !important;
     }
+
+    .start-splash,
+    .start-splash-card {
+        transition: none !important;
+        animation: none !important;
+    }
 }
 
 /* ── Start Page ── */
+
+body.start-splash-active {
+    overflow: hidden;
+}
+
+.start-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background:
+        radial-gradient(1200px at 22% 8%, rgba(251, 191, 36, 0.09), transparent),
+        radial-gradient(900px at 76% 94%, rgba(255, 255, 255, 0.05), transparent),
+        rgba(11, 11, 12, 0.96);
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 380ms ease, visibility 380ms step-end;
+}
+
+.start-splash::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(135deg, rgba(251, 191, 36, 0.02), transparent 35%),
+        linear-gradient(315deg, rgba(255, 255, 255, 0.03), transparent 40%);
+}
+
+.start-splash-exit {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.start-splash-card {
+    position: relative;
+    z-index: 1;
+    width: min(36rem, 100%);
+    padding: clamp(1.7rem, 4vw, 2.4rem) clamp(1.2rem, 3vw, 2rem);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.9rem;
+    animation: splashCardEnter 520ms ease both;
+}
+
+.start-splash-logo {
+    width: clamp(4.2rem, 11vw, 6.8rem);
+    height: auto;
+    filter: drop-shadow(0 0 22px rgba(251, 191, 36, 0.18));
+    margin-bottom: 0.35rem;
+}
+
+.start-splash-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2.2rem, 8.5vw, 4.2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.start-splash-tagline {
+    color: var(--text-muted);
+    font-size: clamp(0.95rem, 2.2vw, 1.18rem);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+@keyframes splashCardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
 
 .start-layout {
     width: 100%;
@@ -1141,6 +1236,10 @@ body.type-break   #segment-title { color: #d9d5cf; }
 @media (max-width: 600px) {
     .course-grid {
         grid-template-columns: 1fr;
+    }
+
+    .start-splash-card {
+        border-radius: 18px;
     }
 }
 
