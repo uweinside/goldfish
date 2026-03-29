@@ -381,24 +381,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const splashController = skipSplash ? null : createStartSplashController(Date.now());
     document.getElementById('new-course-btn')?.addEventListener('click', showNewCourseDialog);
 
-    // Load local courses (Tauri only — silently skipped in browser context)
-    try {
-        const localCourses = await listLocalCourses();
-        renderLocalCourses(localCourses);
-    } catch {
-        // Not running in Tauri context, or no local courses — section stays hidden
+    // Fetch local and GitHub course lists together so the start screen renders as one update.
+    const [localResult, githubResult] = await Promise.allSettled([
+        listLocalCourses(),
+        listCourses(),
+    ]);
+
+    if (localResult.status === 'fulfilled') {
+        renderLocalCourses(localResult.value);
     }
 
-    try {
-        const courses = await listCourses();
-        renderCourseGrid(courses);
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
+    if (githubResult.status === 'fulfilled') {
+        renderCourseGrid(githubResult.value);
+    } else {
+        const reason = githubResult.reason;
+        const msg = reason instanceof Error ? reason.message : String(reason ?? 'Unknown error');
         renderError(`Could not load courses: ${msg}`);
-    } finally {
-        if (splashController) {
-            await splashController.dismiss();
-        }
+    }
+
+    if (splashController) {
+        await splashController.dismiss();
     }
 
     document.addEventListener('keydown', (e) => {
