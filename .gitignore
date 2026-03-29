@@ -4,6 +4,9 @@ node_modules/
 # Frontend build output
 dist/
 
+# Test coverage output
+coverage/
+
 # Rust and Tauri build output
 target/
 src-tauri/target/
