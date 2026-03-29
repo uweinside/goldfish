@@ -15,6 +15,7 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, 'index.html'),
                 timer: resolve(__dirname, 'timer.html'),
+                editor: resolve(__dirname, 'editor.html'),
             },
         },
     },

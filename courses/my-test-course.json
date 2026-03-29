@@ -1,0 +1,57 @@
+{
+  "title": "My Test Course",
+  "chapters": [
+    {
+      "title": "Speaker Introduction X",
+      "sections": [
+        {
+          "title": "Overview Blue",
+          "type": "Narration",
+          "durationSeconds": 300,
+          "instructions": "Instructions X Blue",
+          "transcript": "Transcript X Blue"
+        },
+        {
+          "title": "Demo Red",
+          "type": "Demo",
+          "durationSeconds": 240,
+          "instructions": "Instructions X Red",
+          "transcript": "Transcript X Red"
+        }
+      ]
+    },
+    {
+      "title": "Session Introduction Y",
+      "sections": [
+        {
+          "title": "Section A",
+          "type": "Narration",
+          "durationSeconds": 120,
+          "instructions": "Instructions A",
+          "transcript": "Transcript A"
+        },
+        {
+          "title": "Section B",
+          "type": "Narration",
+          "durationSeconds": 180,
+          "instructions": "Instructions B",
+          "transcript": "Transcript B"
+        },
+        {
+          "title": "Section C",
+          "type": "Narration",
+          "durationSeconds": 240,
+          "instructions": "Instructions C",
+          "transcript": "Transcript C"
+        },
+        {
+          "title": "Section D",
+          "type": "Narration",
+          "durationSeconds": 300,
+          "instructions": "Instructions D",
+          "transcript": "Transcript D"
+        }
+      ]
+    }
+  ]
+}

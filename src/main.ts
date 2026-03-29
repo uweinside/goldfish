@@ -1,4 +1,4 @@
-import { goldfishState, advanceSegment, previousSegment, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection } from './core/state.js';
+import { goldfishState, advanceSegment, previousSegment, advanceChapter, previousChapter, pauseResume, openNotesPanel, closeNotesPanel, advanceNotesSection, previousNotesSection, navigateToSectionInChapter } from './core/state.js';
 import { render } from './ui/renderer.js';
 import { loadCourse } from './core/data-loader.js';
 import { Timeline } from './models/types.js';
@@ -34,11 +34,11 @@ async function init(): Promise<void> {
                 break;
             case 'ArrowRight':
                 e.preventDefault();
-                advanceSegment(timeline);
+                advanceChapter(timeline);
                 break;
             case 'ArrowLeft':
                 e.preventDefault();
-                previousSegment(timeline);
+                previousChapter(timeline);
                 break;
             case 'Escape':
                 if (goldfishState.rightPanelMode === 'notes') {
@@ -61,7 +61,7 @@ async function init(): Promise<void> {
     const btnNext = document.getElementById('btn-next');
 
     btnPrev?.addEventListener('click', () => {
-        previousSegment(timeline);
+        previousChapter(timeline);
     });
 
     btnPause?.addEventListener('click', () => {
@@ -69,7 +69,7 @@ async function init(): Promise<void> {
     });
 
     btnNext?.addEventListener('click', () => {
-        advanceSegment(timeline);
+        advanceChapter(timeline);
     });
 
     const btnExit = document.getElementById('btn-exit');
@@ -120,24 +120,32 @@ async function init(): Promise<void> {
             return;
         }
 
-        const notesSection = target.closest('.info-section-notes-enabled') as HTMLElement | null;
-        if (notesSection) {
-            const sectionIndex = Number(notesSection.dataset.notesSectionIndex);
-            if (!Number.isNaN(sectionIndex)) {
-                openNotesPanel(sectionIndex);
-                return;
+        // Handle section card clicks to navigate and optionally open transcript
+        const sectionCard = target.closest('.info-section[data-section-index]') as HTMLElement | null;
+        if (sectionCard) {
+            const sectionIndexStr = sectionCard.dataset.sectionIndex;
+            if (sectionIndexStr !== undefined) {
+                const sectionIndex = parseInt(sectionIndexStr, 10);
+                if (!isNaN(sectionIndex)) {
+                    navigateToSectionInChapter(sectionIndex, timeline);
+                    const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+                    const targetSection = chapter.sections[sectionIndex];
+                    if (typeof targetSection?.transcript === 'string' && targetSection.transcript.trim().length > 0) {
+                        openNotesPanel();
+                    }
+                }
             }
+            return;
         }
 
         if (target.closest('#outline-view-transcript')) {
-            const seg = timeline.segments[goldfishState.currentSegmentIndex];
-            const firstIdx = seg.info?.findIndex(section =>
-                Array.isArray(section.transcript) && section.transcript.some(block => typeof block === 'string' && block.trim().length > 0),
-            ) ?? -1;
-            if (firstIdx >= 0) {
-                openNotesPanel(firstIdx);
-            } else {
+            const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+            const section = chapter.sections[goldfishState.currentSectionIndex];
+            const hasCurrentTranscript = typeof section.transcript === 'string' && section.transcript.trim().length > 0;
+            if (hasCurrentTranscript) {
                 openNotesPanel();
+            } else {
+                advanceNotesSection(timeline);
             }
             return;
         }
@@ -146,17 +154,9 @@ async function init(): Promise<void> {
             return;
         }
 
-        const segment = timeline.segments[goldfishState.currentSegmentIndex];
-        const firstSectionWithNotes = segment.info?.findIndex(section =>
-            Array.isArray(section.transcript) && section.transcript.some(block => typeof block === 'string' && block.trim().length > 0),
-        ) ?? -1;
-
-        if (firstSectionWithNotes >= 0) {
-            openNotesPanel(firstSectionWithNotes);
-            return;
-        }
-
-        if (typeof segment.transcript === 'string' && segment.transcript.trim().length > 0) {
+        const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+        const section = chapter.sections[goldfishState.currentSectionIndex];
+        if (typeof section.transcript === 'string' && section.transcript.trim().length > 0) {
             openNotesPanel();
         }
     });
@@ -172,19 +172,31 @@ async function init(): Promise<void> {
             return;
         }
 
-        const notesSection = target.closest('.info-section-notes-enabled') as HTMLElement | null;
-        if (!notesSection) {
-            return;
-        }
-
-        const sectionIndex = Number(notesSection.dataset.notesSectionIndex);
-        if (!Number.isNaN(sectionIndex)) {
+        const sectionCard = target.closest('.info-section[data-section-index]') as HTMLElement | null;
+        if (sectionCard) {
             keyboardEvent.preventDefault();
-            openNotesPanel(sectionIndex);
+            const sectionIndexStr = sectionCard.dataset.sectionIndex;
+            if (sectionIndexStr !== undefined) {
+                const sectionIndex = parseInt(sectionIndexStr, 10);
+                if (!isNaN(sectionIndex)) {
+                    navigateToSectionInChapter(sectionIndex, timeline);
+                    const chapter = timeline.chapters[goldfishState.currentChapterIndex];
+                    const targetSection = chapter.sections[sectionIndex];
+                    if (typeof targetSection?.transcript === 'string' && targetSection.transcript.trim().length > 0) {
+                        openNotesPanel();
+                    }
+                }
+            }
         }
     });
 
     tick(); // render immediately before first interval
+    
+    // Fade in after first render to prevent flicker
+    requestAnimationFrame(() => {
+        document.body.classList.remove('timer-loading');
+    });
+    
     setInterval(tick, 100);
 }
 

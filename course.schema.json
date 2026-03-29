@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cuepilot.local/schema/course.v2.schema.json",
+  "title": "CuePilot Course (Simple UI Schema)",
+  "description": "Simple schema aligned to the current Chapters/Sections UI, independent of legacy backend/file formats.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "chapters"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Course title shown in editor and runtime UI."
+    },
+    "chapters": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered chapter list shown in the left column.",
+      "items": {
+        "$ref": "#/$defs/chapter"
+      }
+    }
+  },
+  "$defs": {
+    "sectionType": {
+      "type": "string",
+      "enum": ["Narration", "Demo", "Prompt", "Rule"]
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "type", "durationSeconds", "instructions"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Section title shown in the middle column and section editor."
+        },
+        "type": {
+          "$ref": "#/$defs/sectionType",
+          "description": "Section type selected from the right panel dropdown."
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Section duration in seconds (edited via minutes/seconds controls)."
+        },
+        "instructions": {
+          "type": "string",
+          "description": "Instructions markdown content (freeform markdown)."
+        },
+        "transcript": {
+          "type": "string",
+          "description": "Optional transcript markdown content (freeform markdown)."
+        }
+      }
+    },
+    "chapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "sections"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Chapter title."
+        },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Ordered section list shown in the middle column.",
+          "items": {
+            "$ref": "#/$defs/section"
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "title": "Copilot Fundamentals Workshop",
+      "chapters": [
+        {
+          "title": "Welcome",
+          "sections": [
+            {
+              "title": "Opening Context",
+              "type": "Narration",
+              "durationSeconds": 300,
+              "instructions": "## Goal\nSet context and expectations.",
+              "transcript": "Welcome everyone..."
+            },
+            {
+              "title": "Live Demo",
+              "type": "Demo",
+              "durationSeconds": 420,
+              "instructions": "- Show editor workflow\n- Explain feedback loop"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

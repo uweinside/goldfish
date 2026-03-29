@@ -7,8 +7,9 @@ CuePilot is a **glanceable presentation timing assistant** designed for instruct
 It runs as a **Tauri v2 native desktop app** on a secondary monitor and provides real-time situational awareness:
 
 * Where am I in the flow?
-* How much time is left in the current segment?
+* How much time is left in the current section?
 * What comes next?
+* Am I ahead or behind schedule?
 
 The app must be optimized for **<1 second visual parsing** with **zero cognitive overhead**.
 
@@ -25,7 +26,7 @@ The app must be optimized for **<1 second visual parsing** with **zero cognitive
 ### 2. Time is Primary
 
 * The countdown timer is the dominant UI element
-* Segment information is secondary
+* Section information is secondary
 * Future context is tertiary
 
 ### 3. Zero Interaction During Delivery
@@ -40,45 +41,56 @@ The app must be optimized for **<1 second visual parsing** with **zero cognitive
 
 ---
 
-## 🧱 MVP Scope
+## 🏗️ Application Structure
 
-Implement the smallest useful version first:
+The app has **three pages**, each with its own TypeScript entry:
 
-* Load a timeline from JSON
-* Display:
+### 1. Course Selection (`index.html` → `start.ts`)
 
-  * Current segment title
-  * Countdown timer (primary)
-  * Progress bar
-  * Next segment
-* Automatically advance to next segment
-* Keyboard controls:
+A grid of course cards from two sources:
+- **Local courses** — stored via Tauri backend, shown in "My Courses" section
+- **GitHub courses** — fetched from `uweinside/goldfish-data` repo
 
-  * Space → pause/resume
-  * ArrowRight → next segment
-  * ArrowLeft → previous segment
+Each card shows course code, title, chapter/section counts, and total duration. Actions: Run or Edit.
+
+### 2. Timer (`timer.html` → `main.ts`)
+
+The main presentation view with two-panel layout:
+- **Left panel** — Timer, progress bar, navigation controls, session metadata
+- **Right panel** — Instructions and talking points for current section
+
+### 3. Editor (`editor.html` → `editor.ts`)
+
+Course authoring with three-panel layout:
+- **Left** — Chapter list with drag-and-drop reordering
+- **Middle** — Section outline for selected chapter
+- **Right** — Section detail editor (type, duration, instructions, transcript)
 
 ---
 
 ## 🧠 Data Model
 
-Use a simple, strongly typed structure.
+Courses follow a **hierarchical structure**: Timeline → Chapters → Sections.
 
 ```ts
-interface InfoSection {
-  label: string;
-  items: string[];
+type SectionType = 'Narration' | 'Demo' | 'Prompt' | 'Rule';
+
+interface Section {
+  title: string;
+  type: SectionType;
+  durationSeconds: number;
+  instructions: string;
+  transcript?: string;
 }
 
-interface Segment {
+interface Chapter {
   title: string;
-  duration: number; // seconds
-  type?: "lecture" | "demo" | "break";
-  info?: InfoSection[];
+  sections: Section[];
 }
 
 interface Timeline {
-  segments: Segment[];
+  title: string;
+  chapters: Chapter[];
 }
 ```
 
@@ -86,10 +98,14 @@ Runtime state:
 
 ```ts
 interface AppState {
-  currentSegmentIndex: number;
-  segmentStartTime: number; // Date.now() when segment effectively started (adjusted for pauses)
+  currentChapterIndex: number;
+  currentSectionIndex: number;
+  sectionStartTime: number;    // Date.now() when section started (adjusted for pauses)
   isPaused: boolean;
-  pausedAt?: number; // Date.now() when paused
+  pausedAt?: number;           // Date.now() when paused
+  hasStarted: boolean;         // true once user starts the timer
+  sessionEndTime: number;      // fixed wall-clock endpoint (shifts on pause/resume)
+  rightPanelMode: 'info' | 'notes';
 }
 ```
 
@@ -101,83 +117,118 @@ interface AppState {
 * When time < 0 → switch to **count-up (overtime)**
 * Must be accurate and drift-resistant
 
-Preferred approach:
+Uses `Date.now()` deltas instead of relying solely on `setInterval`:
 
-* Use `Date.now()` deltas instead of relying solely on `setInterval`
+```
+secondsRemaining = section.durationSeconds − (now − sectionStartTime) / 1000
+```
+
+**Session tracking:**
+- `sessionEndTime` is anchored on first start
+- Pause/resume shifts `sessionEndTime` forward by pause duration
+- Schedule drift = actual remaining vs planned remaining
 
 ---
 
 ## 🎨 UI Requirements
 
-### Layout (two-panel, fullscreen)
+### Timer View Layout
 
 **Left panel** — Timing & flow:
 
-* Header: segment kicker (type + status), title, segment type badge
+* Header: chapter kicker, section title, section type badge
 * Timer row: label, state text ("On track" / "Wrapping up" / "Overtime" / "Paused"), large countdown
 * Progress bar (visual only)
-* Meta row: next segment title + session remaining
-* Controls row: Pause/Resume, Prev, Next buttons
+* Meta row: next section title + session remaining + drift indicator
+* Controls row: Pause/Resume, Prev, Next, Exit buttons
 
 **Right panel** — Supporting information:
 
-* `info` sections for the current segment, rendered as labelled lists
-* First section is primary (largest), subsequent sections are secondary/tertiary
-* Each section has a color accent derived from its label keyword
-
----
+* Header showing chapter progress (e.g., "Section 2 of 5")
+* Instructions for current section (markdown-rendered)
+* Optional: notes panel mode
 
 ### Color System
 
 Use color to communicate state on `document.body`:
 
 * `state-ok` (green) → on track
-* `state-warn` (yellow) → last 20% of segment
+* `state-warn` (yellow) → last 20% of section
 * `state-over` (red) → overtime
 
-Segment type classes on `document.body`:
+Section type visual indicators:
+* `Narration` → blue accent
+* `Demo` → purple accent
+* `Prompt` → amber accent
+* `Rule` → red accent
 
-* `type-lecture` → blue accent
-* `type-demo` → purple accent
-* `type-break` → neutral/gray accent
+---
 
-Info section accent colors (derived from `label` keyword):
+## 🦀 Rust Backend Commands
 
-* `focus` / `objective` → `#60A5FA` (blue)
-* `talking` → `#2DD4BF` (teal)
-* `prompt` → `#FBBF24` (amber)
-* `demo` → `#A78BFA` (purple)
-* `rule` → `#F87171` (red)
-* (default) → `#6B7280` (gray)
+The Tauri backend handles all local course persistence:
+
+| Command | Description |
+|---|---|
+| `list_local_courses` | Returns summaries of all courses in `src-tauri/courses/` |
+| `load_local_course` | Reads and parses a course JSON file |
+| `validate_course_document` | Validates a course against the schema |
+| `save_course_document` | Atomically writes a course to disk |
+| `delete_local_course` | Removes a course file |
+
+Frontend calls these via `@tauri-apps/api/core` invoke.
 
 ---
 
 ## 🧩 Behavior Rules
 
-### Segment Transitions
+### Section Transitions
 
-* Automatically move to next segment when time reaches 0
-* Allow manual override via keyboard
+* Automatically advance to next section when time reaches 0
+* Arrow keys navigate by **chapter**, not section
+* Allow manual override via controls
 
 ### Pause
 
 * Freezes timer without losing elapsed time
+* Shifts `sessionEndTime` forward on resume
 
 ### Overtime
 
-* Do NOT auto-advance immediately
-* Allow configurable grace period (future enhancement)
+* Does NOT auto-advance immediately
+* Timer switches to count-up display
+* Red color state indicates overtime
 
 ---
 
-## ⚡ Tech Stack & Performance Constraints
+## ⚡ Tech Stack
 
 * **Runtime**: Tauri v2 native desktop app (Rust backend + WebView frontend)
 * **Frontend**: Vanilla TypeScript + Vite (no UI framework)
 * **Target**: `x86_64-pc-windows-gnu` (MinGW/GNU toolchain)
-* **Dependencies**: minimal — `@tauri-apps/cli`, `vite`, `typescript` only
+* **Dependencies**:
+  - `@tauri-apps/api` — Tauri IPC
+  - `sortablejs` — drag-and-drop in editor
+  - `vite`, `typescript` — build tooling
 * Must run smoothly fullscreen on a secondary monitor
-* Avoid heavy frameworks unless justified
+
+---
+
+## 📁 Project Structure
+
+```
+/src
+  /core         → state management, timer logic, data loading
+  /ui           → DOM rendering
+  /models       → TypeScript types
+  start.ts      → course selection page entry
+  main.ts       → timer page entry
+  editor.ts     → editor page entry
+
+/src-tauri
+  /src          → Rust backend (commands, course model, file I/O)
+  /courses      → local course JSON storage
+```
 
 ---
 
@@ -187,37 +238,7 @@ Info section accent colors (derived from `label` keyword):
 * Prefer explicit naming over clever abstractions
 * Avoid over-engineering
 * No unnecessary state management libraries
-
-Structure:
-
-```
-/src
-  /core       → timer logic, state
-  /ui         → rendering
-  /models     → types
-  /data       → sample timelines
-```
-
----
-
-## 🧪 Example Timeline
-
-```json
-{
-  "segments": [
-    {
-      "title": "Welcome & Framing",
-      "duration": 600,
-      "type": "lecture"
-    },
-    {
-      "title": "Copilot Fundamentals",
-      "duration": 1500,
-      "type": "lecture"
-    }
-  ]
-}
-```
+* Use `goldfishState` as the single mutable state object (timer page)
 
 ---
 
@@ -227,7 +248,7 @@ Do NOT implement:
 
 * Complex configuration UIs
 * Authentication
-* Backend services
+* Backend services (beyond Tauri IPC)
 * Real-time collaboration
 * Fancy animations
 
@@ -237,9 +258,9 @@ This is a **focused single-user tool**.
 
 ## 🔮 Future Extensions (do not implement yet)
 
-* Catch-up mode (schedule drift detection)
+* Catch-up mode / pace adjustment suggestions
 * Presenter notes overlay
-* Import from PDF / agenda
+* Import from external formats
 * Analytics (timing patterns)
 * Hardware integrations (external displays, dials)
 
@@ -250,24 +271,68 @@ This is a **focused single-user tool**.
 When generating code:
 
 * Prioritize **clarity over abstraction**
-* Prefer **working MVP** over extensible architecture
+* Prefer **working implementation** over extensible architecture
 * Keep UI **minimal and distraction-free**
 * Avoid adding features not explicitly requested
+* Follow existing patterns in codebase
 
 If unsure:
 → Choose the simplest implementation that preserves correctness and readability
 
 ---
 
-## 🏁 Definition of Done (MVP)
+## 🏁 Current State (beyond MVP)
 
-The app is complete when:
+The app now includes:
 
-* A timeline JSON can be loaded
-* The timer runs accurately
-* Segments transition correctly
-* The UI is readable at a glance from a distance
-* The presenter can run it fullscreen on a second monitor without interaction
+* ✅ Timeline JSON loading (local + GitHub)
+* ✅ Accurate countdown timer with overtime
+* ✅ Automatic section transitions
+* ✅ Chapter/section navigation
+* ✅ Glanceable two-panel timer view
+* ✅ Schedule drift indicator
+* ✅ Course editor with drag-and-drop
+* ✅ Rust backend for course persistence
+
+---
+
+## 🧪 Example Course
+
+```json
+{
+  "title": "GitHub Copilot Workshop",
+  "chapters": [
+    {
+      "title": "Welcome & Setup",
+      "sections": [
+        {
+          "title": "Course Overview",
+          "type": "Narration",
+          "durationSeconds": 300,
+          "instructions": "Introduce the course objectives and agenda."
+        },
+        {
+          "title": "Environment Setup",
+          "type": "Demo",
+          "durationSeconds": 600,
+          "instructions": "Walk through VS Code extension installation."
+        }
+      ]
+    },
+    {
+      "title": "Copilot Fundamentals",
+      "sections": [
+        {
+          "title": "How Copilot Works",
+          "type": "Narration",
+          "durationSeconds": 900,
+          "instructions": "Explain the LLM-based completion model."
+        }
+      ]
+    }
+  ]
+}
+```
 
 ---
 

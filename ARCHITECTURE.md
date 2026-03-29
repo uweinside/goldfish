@@ -19,9 +19,9 @@ CuePilot is a glanceable presentation timer built as a **Tauri v2** desktop app.
 └─────────────────────────────────────────────────┘
 ```
 
-**Vite** is the frontend build tool. It compiles TypeScript, resolves imports, bundles JSON data files, and serves the result. During development it runs a hot-reloading dev server on `localhost:1420`. For production it outputs optimized static files to `dist/`.
+**Vite** is the frontend build tool. It compiles TypeScript, resolves imports, and serves the result. During development it runs a hot-reloading dev server on `localhost:1420`. For production it outputs optimized static files to `dist/`.
 
-**Tauri** is the desktop shell. It launches a native window containing a WebView that loads the Vite output. In dev mode, the WebView points at the Vite dev server URL. In production, it loads the bundled files from `dist/`. The Rust backend is minimal — it just sets up the window and an optional logging plugin. All application logic lives in the frontend.
+**Tauri** is the desktop shell. It launches a native window containing a WebView that loads the Vite output. In dev mode, the WebView points at the Vite dev server URL. In production, it loads the bundled files from `dist/`. The Rust backend provides local course persistence via IPC commands.
 
 ### Build commands
 
@@ -39,72 +39,85 @@ CuePilot is a glanceable presentation timer built as a **Tauri v2** desktop app.
 goldfish/
 ├── index.html              ← Course selection page (entry point 1)
 ├── timer.html              ← Timer/presentation page (entry point 2)
+├── editor.html             ← Course editor page (entry point 3)
 ├── vite.config.ts          ← Vite config (multi-page, port 1420)
 ├── tsconfig.json           ← TypeScript strict mode, ES2020
 ├── package.json            ← Scripts and dev dependencies
+├── course.schema.json      ← JSON Schema for course files
 │
 ├── src/                    ← All application TypeScript
 │   ├── start.ts            ← Course selection page logic
 │   ├── main.ts             ← Timer page logic (init, keyboard, buttons)
+│   ├── editor.ts           ← Course editor logic (drag-drop, panel management)
 │   ├── models/
-│   │   └── types.ts        ← Data types (Timeline, Segment, AppState)
+│   │   ├── types.ts        ← Data types (Timeline, Chapter, Section, AppState)
+│   │   └── course-authoring.ts  ← Backend API types
 │   ├── core/
 │   │   ├── state.ts        ← Mutable app state + state transitions
-│   │   └── timer.ts        ← Pure time calculations (no side effects)
-│   ├── ui/
-│   │   └── renderer.ts     ← DOM rendering (reads state, writes to DOM)
-│   └── data/
-│       ├── gh-300.json     ← Course timeline files
-│       ├── az-110.json
-│       └── ...
+│   │   ├── timer.ts        ← Pure time calculations (no side effects)
+│   │   ├── data-loader.ts  ← Course loading (GitHub + local)
+│   │   └── course-authoring-api.ts  ← Tauri IPC wrapper
+│   └── ui/
+│       └── renderer.ts     ← DOM rendering (reads state, writes to DOM)
 │
 ├── wwwroot/                ← Static assets (served at / by Vite)
 │   └── css/
 │       └── site.css        ← All styling (layout, colors, typography)
 │
-└── src-tauri/              ← Tauri / Rust shell
+└── src-tauri/              ← Tauri / Rust backend
     ├── tauri.conf.json     ← Window config, build settings, app identity
     ├── src/
     │   ├── main.rs         ← Rust entry point (calls lib::run)
-    │   └── lib.rs          ← Tauri builder setup (window + logging)
+    │   ├── lib.rs          ← Tauri builder setup
+    │   ├── commands.rs     ← IPC command handlers
+    │   ├── course_model.rs ← Rust course types and validation
+    │   └── course_store.rs ← File I/O for courses
+    ├── courses/            ← Local course JSON storage
     └── icons/              ← App icons for packaging
 ```
 
 ---
 
-## Two Pages, Two Entry Points
+## Three Pages, Three Entry Points
 
-The app has two HTML pages, each with its own TypeScript entry:
+The app has three HTML pages, each with its own TypeScript entry:
 
 ### 1. Course Selection (`index.html` → `start.ts`)
 
-A grid of course cards. Each card shows the course code, title, segment count, and total duration. Clicking a card navigates to:
+A grid of course cards from two sources:
+- **Local courses** — fetched via Tauri `list_local_courses` command
+- **GitHub courses** — fetched from `uweinside/goldfish-data` repo
 
-```
-timer.html?course=gh-300
-```
+Each card shows the course code, title, chapter/section counts, and total duration. Actions: Run or Edit.
 
 ### 2. Timer (`timer.html` → `main.ts`)
 
-The main presentation view. Reads the `?course=` query parameter, dynamically imports the matching JSON timeline, and starts the render loop.
+The main presentation view. Reads the `?course=` query parameter, loads the course via `loadCourse()`, and starts the render loop.
+
+### 3. Editor (`editor.html` → `editor.ts`)
+
+Course authoring with three-panel layout:
+- **Left** — Chapter list with drag-and-drop (SortableJS)
+- **Middle** — Section outline for selected chapter
+- **Right** — Section detail editor
 
 ---
 
 ## Data Flow
 
 ```
-  JSON file (e.g. gh-300.json)
+  Course JSON (local or GitHub)
         │
         ▼
-  loadTimeline() ──→ Timeline object (segments[])
+  loadCourse() ──→ Timeline object (chapters[].sections[])
         │
         ▼
-  goldfishState (AppState)     ◄── pauseResume / advanceSegment / previousSegment
+  goldfishState (AppState)     ◄── pauseResume / advanceChapter / previousChapter
         │
         ▼
   render() called every 100ms
         │
-        ├── getSecondsRemaining()       → segment countdown
+        ├── getSecondsRemaining()       → section countdown
         ├── getSessionActualRemaining() → clock-based session remaining
         ├── getScheduleDrift()          → ahead/behind indicator
         │
@@ -114,23 +127,26 @@ The main presentation view. Reads the `?course=` query parameter, dynamically im
 
 ### Key data types
 
-**Timeline** — A course definition loaded from JSON. Contains a title and an array of segments.
+**Timeline** — A course definition loaded from JSON. Contains a title and an array of chapters.
 
-**Segment** — One block of content: a title, duration in seconds, an optional type (`lecture` / `demo` / `break`), and optional info sections displayed in the right panel.
+**Chapter** — A logical grouping of sections with a title.
 
-**AppState** — Mutable runtime state: which segment is active, when it started, whether the timer is paused, and the fixed session end time.
+**Section** — One block of content: a title, type (`Narration` / `Demo` / `Prompt` / `Rule`), duration in seconds, and instructions content.
+
+**AppState** — Mutable runtime state: which chapter/section is active, when it started, whether the timer is paused, and the fixed session end time.
 
 ---
 
 ## State Management
 
-All mutable state lives in a single exported object (`goldfishState`) in `state.ts`. There is no state management library. Three functions mutate it:
+All mutable state lives in a single exported object (`goldfishState`) in `state.ts`. There is no state management library. Key functions mutate it:
 
 | Function | Trigger | What it does |
 |---|---|---|
-| `pauseResume(timeline)` | Space key or Pause button | Toggles pause. On first start, anchors `sessionEndTime`. On resume, shifts both `segmentStartTime` and `sessionEndTime` forward by the pause duration. |
-| `advanceSegment(timeline)` | → key or Next button | Moves to the next segment. Resets segment timer. Does **not** change `sessionEndTime`. |
-| `previousSegment(timeline)` | ← key or Prev button | Moves to the previous segment. Same behavior as advance but backwards. |
+| `pauseResume(timeline)` | Space key or Pause button | Toggles pause. On first start, anchors `sessionEndTime`. On resume, shifts both `sectionStartTime` and `sessionEndTime` forward by the pause duration. |
+| `advanceChapter(timeline)` | → key or Next button | Moves to the next chapter's first section. Does **not** change `sessionEndTime`. |
+| `previousChapter(timeline)` | ← key or Prev button | Moves to the previous chapter's first section. |
+| `advanceSegment(timeline)` | Auto-advance or manual | Moves to the next section (within or across chapters). |
 
 ---
 
@@ -138,15 +154,15 @@ All mutable state lives in a single exported object (`goldfishState`) in `state.
 
 All time functions are **pure** (no side effects) and live in `timer.ts`.
 
-### Segment timer
+### Section timer
 
-Each segment counts down from its own `duration`. The countdown uses `Date.now()` deltas (not `setInterval` counting) to avoid drift:
+Each section counts down from its own `durationSeconds`. The countdown uses `Date.now()` deltas (not `setInterval` counting) to avoid drift:
 
 ```
-secondsRemaining = segment.duration − (now − segmentStartTime) / 1000
+secondsRemaining = section.durationSeconds − (now − sectionStartTime) / 1000
 ```
 
-When `secondsRemaining` goes negative, the segment is in **overtime** and the display switches to count-up.
+When `secondsRemaining` goes negative, the section is in **overtime** and the display switches to count-up.
 
 ### Session timer (fixed end time)
 
@@ -156,7 +172,7 @@ The total session end time is anchored when the session first starts:
 sessionEndTime = Date.now() + totalDuration
 ```
 
-This value is **fixed** — clicking Next early or overrunning a segment does not change it. Pauses shift it forward so only active presentation time counts.
+This value is **fixed** — clicking Next early or overrunning a section does not change it. Pauses shift it forward so only active presentation time counts.
 
 **Session remaining** is simply `sessionEndTime − now`.
 

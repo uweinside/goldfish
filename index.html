@@ -12,6 +12,14 @@
             <h1 class="app-title"><span class="app-title-accent">Cue</span>Pilot</h1>
             <p class="app-subtitle">Select a course to begin</p>
         </div>
+        <section id="local-courses-section" class="local-courses-section" hidden>
+            <div class="local-courses-header">
+                <h2 class="local-courses-title">My Courses</h2>
+                <button type="button" id="new-course-btn" class="editor-btn editor-btn-primary">+ New Course</button>
+            </div>
+            <div id="local-course-grid" class="local-course-grid course-grid"></div>
+        </section>
+        <div id="github-courses-label" class="start-section-label" hidden>From GitHub</div>
         <div id="course-grid" class="course-grid">
             <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
             <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
