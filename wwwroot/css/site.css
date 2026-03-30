@@ -90,6 +90,10 @@ body {
     user-select: none;
 }
 
+body.start-page {
+    padding: 0.85rem;
+}
+
 .app-layout {
     width: 100%;
     height: 100%;
@@ -1133,13 +1137,15 @@ html.skip-start-splash .start-splash {
 }
 
 .start-layout {
+    --start-grid-max: 62rem;
     width: 100%;
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
-    padding: 2rem 2rem 0.5rem;
+    gap: 1.25rem;
+    padding: 1rem 1.1rem 0.4rem;
     overflow-y: auto;
 }
 
@@ -1147,13 +1153,13 @@ html.skip-start-splash .start-splash {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
     flex-shrink: 0;
 }
 
 .app-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-size: clamp(2.4rem, 6.6vw, 4.7rem);
     font-weight: 700;
     letter-spacing: -0.03em;
     color: var(--text-main);
@@ -1166,25 +1172,25 @@ html.skip-start-splash .start-splash {
 
 .app-subtitle {
     color: var(--text-muted);
-    font-size: 1.05rem;
+    font-size: 0.96rem;
     font-weight: 500;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.035em;
     text-transform: uppercase;
 }
 
 .course-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
+    gap: 0.85rem;
     width: 100%;
-    max-width: 64rem;
+    max-width: var(--start-grid-max, 64rem);
 }
 
 .course-card {
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
-    padding: 1.25rem 1.35rem;
+    gap: 0.45rem;
+    padding: 1rem 1.05rem;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.035);
     border: 1px solid var(--border);
@@ -1199,7 +1205,7 @@ html.skip-start-splash .start-splash {
 .course-card-main {
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.45rem;
     color: inherit;
     text-decoration: none;
 }
@@ -1208,9 +1214,9 @@ html.skip-start-splash .start-splash {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 0.4rem;
-    padding-top: 0.55rem;
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+    padding-top: 0.45rem;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1218,16 +1224,16 @@ html.skip-start-splash .start-splash {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 2rem;
-    padding: 0 0.75rem;
+    height: 1.8rem;
+    padding: 0 0.62rem;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.03);
     color: var(--text-muted);
     text-decoration: none;
-    font-size: 0.8rem;
+    font-size: 0.74rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -1280,22 +1286,26 @@ html.skip-start-splash .start-splash {
 }
 
 .course-code {
-    font-size: 0.82rem;
+    display: block;
+    font-size: 0.76rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     color: var(--accent-strong);
-    line-height: 1.4;
-    min-height: calc(0.82rem * 1.4);
+    line-height: 1.3;
+    min-height: calc(0.76rem * 1.3);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .course-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: clamp(1.1rem, 1.6vw, 1.45rem);
+    font-size: clamp(1rem, 1.35vw, 1.28rem);
     font-weight: 600;
     letter-spacing: -0.02em;
-    line-height: 1.25;
-    min-height: calc(2 * 1.25em);
+    line-height: 1.2;
+    min-height: calc(2 * 1.2em);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -1303,11 +1313,15 @@ html.skip-start-splash .start-splash {
 }
 
 .course-meta {
-    font-size: 0.88rem;
+    display: block;
+    font-size: 0.82rem;
     color: var(--text-secondary);
     font-weight: 500;
-    line-height: 1.4;
-    min-height: calc(0.88rem * 1.4);
+    line-height: 1.3;
+    min-height: calc(0.82rem * 1.3);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 /* ── Skeleton Loading Cards ── */
@@ -1371,6 +1385,12 @@ html.skip-start-splash .start-splash {
     }
 }
 
+@media (min-width: 1500px) {
+    body.start-page .course-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 600px) {
     .course-grid {
         grid-template-columns: 1fr;
@@ -1378,6 +1398,69 @@ html.skip-start-splash .start-splash {
 
     .start-splash-card {
         border-radius: 18px;
+    }
+}
+
+@media (max-height: 1100px) and (min-width: 601px) {
+    body.start-page {
+        padding: 0.7rem;
+    }
+
+    body.start-page .start-layout {
+        gap: 0.9rem;
+        padding: 0.75rem 0.95rem 0.3rem;
+    }
+
+    body.start-page .start-header {
+        gap: 0.25rem;
+    }
+
+    body.start-page .app-title {
+        font-size: clamp(2.1rem, 5.8vw, 4.1rem);
+    }
+
+    body.start-page .app-subtitle {
+        font-size: 0.9rem;
+        letter-spacing: 0.03em;
+    }
+
+    body.start-page .course-grid {
+        gap: 0.7rem;
+    }
+
+    body.start-page .course-card {
+        padding: 0.85rem 0.9rem;
+        gap: 0.35rem;
+    }
+
+    body.start-page .course-card-main {
+        gap: 0.35rem;
+    }
+
+    body.start-page .course-card-actions {
+        gap: 0.35rem;
+        margin-top: 0.25rem;
+        padding-top: 0.4rem;
+    }
+
+    body.start-page .course-card-action {
+        height: 1.68rem;
+        padding: 0 0.56rem;
+        font-size: 0.7rem;
+    }
+
+    body.start-page .course-code {
+        font-size: 0.72rem;
+        min-height: calc(0.72rem * 1.3);
+    }
+
+    body.start-page .course-title {
+        font-size: clamp(0.95rem, 1.2vw, 1.18rem);
+    }
+
+    body.start-page .course-meta {
+        font-size: 0.78rem;
+        min-height: calc(0.78rem * 1.3);
     }
 }
 
@@ -2456,7 +2539,7 @@ body.editor-resizing {
 
 .local-courses-section {
     width: 100%;
-    max-width: 64rem;
+    max-width: var(--start-grid-max, 64rem);
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
@@ -2495,7 +2578,7 @@ body.editor-resizing {
 
 .start-section-label {
     width: 100%;
-    max-width: 64rem;
+    max-width: var(--start-grid-max, 64rem);
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.78rem;
     font-weight: 700;
