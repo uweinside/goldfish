@@ -39,11 +39,28 @@ export function getScheduleDrift(timeline: Timeline, state: AppState): number {
 
 export function formatTime(totalSeconds: number): string {
     const abs = Math.abs(Math.floor(totalSeconds));
+    const sign = totalSeconds < 0 ? '+' : '';
+
+    if (abs === 0) {
+        return `${sign}0s`;
+    }
+
     const h = Math.floor(abs / 3600);
     const m = Math.floor((abs % 3600) / 60);
     const s = abs % 60;
-    const sign = totalSeconds < 0 ? '+' : '';
-    const mm = m.toString().padStart(2, '0');
-    const ss = s.toString().padStart(2, '0');
-    return h > 0 ? `${sign}${h}:${mm}:${ss}` : `${sign}${mm}:${ss}`;
+    const parts: string[] = [];
+
+    if (h > 0) {
+        parts.push(`${h}h`);
+    }
+
+    if (m > 0) {
+        parts.push(`${m}m`);
+    }
+
+    if (s > 0 || parts.length === 0) {
+        parts.push(`${s}s`);
+    }
+
+    return `${sign}${parts.join(' ')}`;
 }

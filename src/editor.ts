@@ -1,6 +1,7 @@
 import Sortable from 'sortablejs';
 import { Chapter, Section, SectionType, Timeline } from './models/types.js';
 import { loadLocalCourse, saveCourseDocument } from './core/course-authoring-api.js';
+import { formatTime } from './core/timer.js';
 
 interface EditorViewState {
     selectedChapterIndex: number;
@@ -159,26 +160,8 @@ function escapeHtml(text: string): string {
         .replace(/'/g, '&#39;');
 }
 
-function formatMinutesSeconds(totalSeconds: number): string {
-    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-    const minutes = Math.floor(safeSeconds / 60);
-    const seconds = safeSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
-
 export function formatSessionDuration(totalSeconds: number): string {
-    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-    const hours = Math.floor(safeSeconds / 3600);
-    const minutes = Math.floor((safeSeconds % 3600) / 60);
-    const seconds = safeSeconds % 60;
-
-    if (hours > 0) {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
-            .toString()
-            .padStart(2, '0')}`;
-    }
-
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return formatTime(Math.max(0, totalSeconds));
 }
 
 function totalDuration(timeline: Timeline): number {
@@ -388,7 +371,7 @@ function renderChapterList(timeline: Timeline): void {
 
             const duration = document.createElement('span');
             duration.className = 'editor-segment-duration';
-            duration.textContent = formatMinutesSeconds(chapterDuration(chapter));
+            duration.textContent = formatSessionDuration(chapterDuration(chapter));
 
             card.appendChild(handle);
             card.appendChild(input);
@@ -429,7 +412,7 @@ function renderChapterList(timeline: Timeline): void {
             button.innerHTML = `
                 <span class="editor-segment-handle" aria-hidden="true">::</span>
                 <span class="editor-segment-title">${escapeHtml(chapter.title)}</span>
-                <span class="editor-segment-duration">${formatMinutesSeconds(chapterDuration(chapter))}</span>
+                <span class="editor-segment-duration">${formatSessionDuration(chapterDuration(chapter))}</span>
             `;
 
             button.addEventListener('click', () => {
@@ -501,7 +484,7 @@ function renderSectionList(timeline: Timeline): void {
             <span class="editor-info-handle" aria-hidden="true">::</span>
             <span class="editor-info-card-label">${escapeHtml(section.title)}</span>
             <span class="editor-info-card-type">${escapeHtml(section.type)}</span>
-            <span class="editor-info-card-count">${formatMinutesSeconds(section.durationSeconds)}</span>
+            <span class="editor-info-card-count">${formatSessionDuration(section.durationSeconds)}</span>
         `;
 
         card.addEventListener('click', () => {
@@ -684,7 +667,7 @@ function renderChapterEditor(timeline: Timeline): void {
                     />
                 </div>
                 <div class="editor-chapter-meta">
-                    <span class="editor-chapter-meta-pill">${formatMinutesSeconds(chapterDuration(chapter))} · ${chapter.sections.length} section${chapter.sections.length === 1 ? '' : 's'}</span>
+                    <span class="editor-chapter-meta-pill">${formatSessionDuration(chapterDuration(chapter))} · ${chapter.sections.length} section${chapter.sections.length === 1 ? '' : 's'}</span>
                 </div>
             </div>
         </div>

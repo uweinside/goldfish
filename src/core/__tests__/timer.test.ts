@@ -51,32 +51,33 @@ function createTestTimeline(chapterDurations: number[][]): Timeline {
 }
 
 describe('formatTime', () => {
-    it('formats positive seconds as MM:SS', () => {
-        expect(formatTime(0)).toBe('00:00');
-        expect(formatTime(5)).toBe('00:05');
-        expect(formatTime(65)).toBe('01:05');
-        expect(formatTime(600)).toBe('10:00');
-        expect(formatTime(3599)).toBe('59:59');
+    it('formats positive seconds as friendly duration tokens', () => {
+        expect(formatTime(0)).toBe('0s');
+        expect(formatTime(5)).toBe('5s');
+        expect(formatTime(65)).toBe('1m 5s');
+        expect(formatTime(600)).toBe('10m');
+        expect(formatTime(3599)).toBe('59m 59s');
     });
 
-    it('formats hours when >= 3600 seconds', () => {
-        expect(formatTime(3600)).toBe('1:00:00');
-        expect(formatTime(3661)).toBe('1:01:01');
-        expect(formatTime(7200)).toBe('2:00:00');
-        expect(formatTime(36000)).toBe('10:00:00');
+    it('formats hours without forcing zero-value units', () => {
+        expect(formatTime(3600)).toBe('1h');
+        expect(formatTime(3660)).toBe('1h 1m');
+        expect(formatTime(3661)).toBe('1h 1m 1s');
+        expect(formatTime(7200)).toBe('2h');
+        expect(formatTime(36000)).toBe('10h');
     });
 
     it('formats negative seconds (overtime) with + prefix', () => {
-        expect(formatTime(-1)).toBe('+00:01');
-        expect(formatTime(-65)).toBe('+01:05');
-        expect(formatTime(-3600)).toBe('+1:00:00');
+        expect(formatTime(-1)).toBe('+1s');
+        expect(formatTime(-65)).toBe('+1m 5s');
+        expect(formatTime(-3600)).toBe('+1h');
     });
 
     it('handles fractional seconds by flooring', () => {
-        expect(formatTime(5.9)).toBe('00:05');
-        expect(formatTime(59.99)).toBe('00:59');
+        expect(formatTime(5.9)).toBe('5s');
+        expect(formatTime(59.99)).toBe('59s');
         // Note: floors first, then takes abs: floor(-5.9) = -6, abs(-6) = 6
-        expect(formatTime(-5.9)).toBe('+00:06');
+        expect(formatTime(-5.9)).toBe('+6s');
     });
 });
 

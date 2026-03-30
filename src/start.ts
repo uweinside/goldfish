@@ -251,18 +251,25 @@ function totalPages(): number {
 }
 
 export function formatDuration(totalSeconds: number): string {
-    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-    const hours = Math.floor(safeSeconds / 3600);
-    const minutes = Math.floor((safeSeconds % 3600) / 60);
-    const seconds = safeSeconds % 60;
+    const safeSeconds = Math.max(0, totalSeconds);
+    const roundedMinutes = Math.ceil(safeSeconds / 60);
 
-    if (hours > 0) {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
-            .toString()
-            .padStart(2, '0')}`;
+    if (roundedMinutes === 0) {
+        return '0m';
     }
 
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const hours = Math.floor(roundedMinutes / 60);
+    const minutes = roundedMinutes % 60;
+
+    if (hours > 0 && minutes === 0) {
+        return `${hours}h`;
+    }
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+
+    return `${minutes}m`;
 }
 
 function renderPage(page: number): void {

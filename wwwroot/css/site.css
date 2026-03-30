@@ -1792,7 +1792,7 @@ body.editor-resizing {
 
 .editor-info-card-count {
     font-size: 0.78rem;
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.08em;
     font-weight: 700;
     color: var(--text-muted);
@@ -2011,9 +2011,12 @@ body.editor-resizing {
 .editor-info-card-type,
 .editor-info-card-count {
     font-size: 0.78rem;
-    text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 700;
+}
+
+.editor-info-card-type {
+    text-transform: uppercase;
 }
 
 .editor-info-card-type {

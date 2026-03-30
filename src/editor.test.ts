@@ -93,13 +93,13 @@ describe('normalizeTimelineAndSelection', () => {
 });
 
 describe('formatSessionDuration', () => {
-    it('returns mm:ss for durations below one hour', () => {
-        expect(formatSessionDuration(59)).toBe('00:59');
-        expect(formatSessionDuration(3599)).toBe('59:59');
+    it('returns friendly duration strings below one hour', () => {
+        expect(formatSessionDuration(59)).toBe('59s');
+        expect(formatSessionDuration(3599)).toBe('59m 59s');
     });
 
-    it('returns hh:mm:ss for durations of one hour or more', () => {
-        expect(formatSessionDuration(3600)).toBe('01:00:00');
-        expect(formatSessionDuration(3661)).toBe('01:01:01');
+    it('returns friendly duration strings for one hour or more', () => {
+        expect(formatSessionDuration(3600)).toBe('1h');
+        expect(formatSessionDuration(3661)).toBe('1h 1m 1s');
     });
 });
