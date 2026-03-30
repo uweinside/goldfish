@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
+    formatClockTime,
     formatTime,
     getElapsedMs,
     getSecondsRemaining,
@@ -78,6 +79,28 @@ describe('formatTime', () => {
         expect(formatTime(59.99)).toBe('59s');
         // Note: floors first, then takes abs: floor(-5.9) = -6, abs(-6) = 6
         expect(formatTime(-5.9)).toBe('+6s');
+    });
+});
+
+describe('formatClockTime', () => {
+    it('formats positive seconds as h:mm:ss', () => {
+        expect(formatClockTime(0)).toBe('0:00:00');
+        expect(formatClockTime(5)).toBe('0:00:05');
+        expect(formatClockTime(65)).toBe('0:01:05');
+        expect(formatClockTime(3599)).toBe('0:59:59');
+        expect(formatClockTime(3600)).toBe('1:00:00');
+        expect(formatClockTime(3661)).toBe('1:01:01');
+    });
+
+    it('formats negative seconds (overtime) with + prefix', () => {
+        expect(formatClockTime(-1)).toBe('+0:00:01');
+        expect(formatClockTime(-3661)).toBe('+1:01:01');
+    });
+
+    it('handles fractional seconds by flooring', () => {
+        expect(formatClockTime(5.9)).toBe('0:00:05');
+        // Note: floors first, then takes abs: floor(-5.9) = -6, abs(-6) = 6
+        expect(formatClockTime(-5.9)).toBe('+0:00:06');
     });
 });
 

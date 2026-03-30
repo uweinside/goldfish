@@ -64,3 +64,13 @@ export function formatTime(totalSeconds: number): string {
 
     return `${sign}${parts.join(' ')}`;
 }
+
+export function formatClockTime(totalSeconds: number): string {
+    const abs = Math.abs(Math.floor(totalSeconds));
+    const sign = totalSeconds < 0 ? '+' : '';
+    const h = Math.floor(abs / 3600);
+    const m = Math.floor((abs % 3600) / 60);
+    const s = abs % 60;
+
+    return `${sign}${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}

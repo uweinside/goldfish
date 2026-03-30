@@ -1,5 +1,5 @@
 import { Timeline, AppState, Section } from '../models/types.js';
-import { getSecondsRemaining, getSessionActualRemaining, getScheduleDrift, formatTime } from '../core/timer.js';
+import { getSecondsRemaining, getSessionActualRemaining, getScheduleDrift, formatClockTime } from '../core/timer.js';
 
 const elTitle = document.getElementById('segment-title')!;
 const elTimer = document.getElementById('timer')!;
@@ -223,7 +223,7 @@ function renderSectionsPanel(timeline: Timeline, state: AppState, canOpenTranscr
                         <h3 class="info-label">${escapeHtml(`${index + 1}. ${chapterSection.title}`)}</h3>
                         ${isCurrent ? '<span class="notes-marker" aria-hidden="true">Now</span>' : ''}
                     </div>
-                    <p class="chapter-section-meta">${escapeHtml(chapterSection.type)} · ${formatTime(chapterSection.durationSeconds)}</p>
+                    <p class="chapter-section-meta">${escapeHtml(chapterSection.type)} · ${formatClockTime(chapterSection.durationSeconds)}</p>
                     <div class="chapter-section-instructions">${renderMarkdown(instructions)}</div>
                 </div>
             `;
@@ -304,7 +304,7 @@ export function render(timeline: Timeline, state: AppState): void {
     const chapterTotalSeconds = getCurrentChapterTotalSeconds(timeline, state);
     const chapterSecondsRemaining = getCurrentChapterRemainingSeconds(timeline, state);
 
-    elTimer.textContent = formatTime(chapterSecondsRemaining);
+    elTimer.textContent = formatClockTime(chapterSecondsRemaining);
     elTitle.textContent = chapter.title;
     elSegmentBadgeText.textContent = String(state.currentChapterIndex + 1);
 
@@ -369,7 +369,7 @@ export function render(timeline: Timeline, state: AppState): void {
         : timeline.chapters
             .flatMap(chapter => chapter.sections)
             .reduce((sum, s) => sum + s.durationSeconds, 0);
-    elTotalRemaining.textContent = formatTime(sessionRemaining);
+    elTotalRemaining.textContent = formatClockTime(sessionRemaining);
 
     const DRIFT_CLASSES = ['drift-ahead', 'drift-behind', 'drift-on-schedule'] as const;
     DRIFT_CLASSES.forEach(c => elScheduleDrift.classList.remove(c));
@@ -378,10 +378,10 @@ export function render(timeline: Timeline, state: AppState): void {
     } else {
         const drift = getScheduleDrift(timeline, state);
         if (drift > 30) {
-            elScheduleDrift.textContent = `${formatTime(Math.round(drift))} ahead`;
+            elScheduleDrift.textContent = `${formatClockTime(Math.round(drift))} ahead`;
             elScheduleDrift.classList.add('drift-ahead');
         } else if (drift < -30) {
-            elScheduleDrift.textContent = `${formatTime(Math.round(-drift))} behind`;
+            elScheduleDrift.textContent = `${formatClockTime(Math.round(-drift))} behind`;
             elScheduleDrift.classList.add('drift-behind');
         } else {
             elScheduleDrift.textContent = 'On schedule';
