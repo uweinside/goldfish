@@ -1,6 +1,7 @@
 import Sortable from 'sortablejs';
 import { Chapter, Section, SectionType, Timeline } from './models/types.js';
 import { loadLocalCourse, saveCourseDocument } from './core/course-authoring-api.js';
+import { formatTime } from './core/timer.js';
 
 interface EditorViewState {
     selectedChapterIndex: number;
@@ -29,6 +30,7 @@ const state: EditorViewState = {
 
 let chapterSortable: Sortable | null = null;
 let sectionSortable: Sortable | null = null;
+let editingChapterIndex: number | null = null;
 
 function createDefaultSection(title = 'Section 1'): Section {
     return {
@@ -158,20 +160,8 @@ function escapeHtml(text: string): string {
         .replace(/'/g, '&#39;');
 }
 
-function formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-        return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-    }
-    return `${minutes}m`;
-}
-
-function formatMinutesSeconds(totalSeconds: number): string {
-    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-    const minutes = Math.floor(safeSeconds / 60);
-    const seconds = safeSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+export function formatSessionDuration(totalSeconds: number): string {
+    return formatTime(Math.max(0, totalSeconds));
 }
 
 function totalDuration(timeline: Timeline): number {
@@ -266,10 +256,9 @@ function setupEditorDividers(): void {
             setEditorSplits(percent, editorSplits.split2);
         } else {
             const left = clientX - rect.left;
-            const leftAfterDiv1 = left - (editorSplits.split1 + 0.2);
-            const remainingWidth = rect.width - (editorSplits.split1 + 0.2);
-            const percent = remainingWidth > 0 ? (leftAfterDiv1 / remainingWidth) * 100 : 0;
-            setEditorSplits(editorSplits.split1, percent);
+            const percent = (left / rect.width) * 100;
+            const split2 = percent - editorSplits.split1;
+            setEditorSplits(editorSplits.split1, split2);
         }
     };
 
@@ -362,35 +351,108 @@ function renderChapterList(timeline: Timeline): void {
     elChapterList.innerHTML = '';
 
     timeline.chapters.forEach((chapter, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `editor-segment-card${index === state.selectedChapterIndex ? ' selected' : ''}`;
-        button.dataset.chapterIndex = String(index);
-        button.innerHTML = `
-            <span class="editor-segment-handle" aria-hidden="true">::</span>
-            <span class="editor-segment-title">${escapeHtml(chapter.title)}</span>
-            <span class="editor-segment-duration">${formatMinutesSeconds(chapterDuration(chapter))}</span>
-        `;
-
-        button.addEventListener('click', () => {
-            state.selectedChapterIndex = index;
-            selectSectionForActiveChapter();
-            render(timeline);
-        });
-
         const row = document.createElement('div');
         row.className = 'editor-card-row';
-        row.appendChild(button);
 
-        if (index === state.selectedChapterIndex && timeline.chapters.length > 1) {
-            const deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.className = 'editor-card-delete';
-            deleteBtn.title = 'Delete chapter';
-            deleteBtn.setAttribute('aria-label', `Delete chapter: ${chapter.title}`);
-            deleteBtn.textContent = '×';
-            deleteBtn.addEventListener('click', () => removeChapter(index, timeline));
-            row.appendChild(deleteBtn);
+        if (index === editingChapterIndex) {
+            const card = document.createElement('div');
+            card.className = `editor-segment-card editing${index === state.selectedChapterIndex ? ' selected' : ''}`;
+
+            const handle = document.createElement('span');
+            handle.className = 'editor-segment-handle';
+            handle.setAttribute('aria-hidden', 'true');
+            handle.textContent = '::';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'editor-segment-rename-input';
+            input.value = chapter.title;
+            input.setAttribute('aria-label', 'Chapter title');
+
+            const duration = document.createElement('span');
+            duration.className = 'editor-segment-duration';
+            duration.textContent = formatSessionDuration(chapterDuration(chapter));
+
+            card.appendChild(handle);
+            card.appendChild(input);
+            card.appendChild(duration);
+            row.appendChild(card);
+
+            let committed = false;
+            const commit = (): void => {
+                if (committed) return;
+                committed = true;
+                const trimmed = input.value.trim();
+                if (trimmed) {
+                    chapter.title = trimmed;
+                    saveCourse();
+                }
+                editingChapterIndex = null;
+                render(timeline);
+            };
+            const cancel = (): void => {
+                if (committed) return;
+                committed = true;
+                editingChapterIndex = null;
+                render(timeline);
+            };
+
+            input.addEventListener('keydown', (e: KeyboardEvent) => {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            });
+            input.addEventListener('blur', commit);
+
+            requestAnimationFrame(() => { input.focus(); input.select(); });
+        } else {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `editor-segment-card${index === state.selectedChapterIndex ? ' selected' : ''}`;
+            button.dataset.chapterIndex = String(index);
+            button.innerHTML = `
+                <span class="editor-segment-handle" aria-hidden="true">::</span>
+                <span class="editor-segment-title">${escapeHtml(chapter.title)}</span>
+                <span class="editor-segment-duration">${formatSessionDuration(chapterDuration(chapter))}</span>
+            `;
+
+            button.addEventListener('click', () => {
+                state.selectedChapterIndex = index;
+                selectSectionForActiveChapter();
+                render(timeline);
+            });
+
+            row.appendChild(button);
+
+            if (index === state.selectedChapterIndex) {
+                const actions = document.createElement('div');
+                actions.className = 'editor-card-actions';
+
+                const renameBtn = document.createElement('button');
+                renameBtn.type = 'button';
+                renameBtn.className = 'editor-card-rename';
+                renameBtn.title = 'Rename chapter';
+                renameBtn.setAttribute('aria-label', `Rename chapter: ${chapter.title}`);
+                renameBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+                renameBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editingChapterIndex = index;
+                    renderChapterList(timeline);
+                });
+                actions.appendChild(renameBtn);
+
+                if (timeline.chapters.length > 1) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.className = 'editor-card-delete';
+                    deleteBtn.title = 'Delete chapter';
+                    deleteBtn.setAttribute('aria-label', `Delete chapter: ${chapter.title}`);
+                    deleteBtn.textContent = '×';
+                    deleteBtn.addEventListener('click', () => removeChapter(index, timeline));
+                    actions.appendChild(deleteBtn);
+                }
+
+                row.appendChild(actions);
+            }
         }
 
         elChapterList.appendChild(row);
@@ -422,7 +484,7 @@ function renderSectionList(timeline: Timeline): void {
             <span class="editor-info-handle" aria-hidden="true">::</span>
             <span class="editor-info-card-label">${escapeHtml(section.title)}</span>
             <span class="editor-info-card-type">${escapeHtml(section.type)}</span>
-            <span class="editor-info-card-count">${formatMinutesSeconds(section.durationSeconds)}</span>
+            <span class="editor-info-card-count">${formatSessionDuration(section.durationSeconds)}</span>
         `;
 
         card.addEventListener('click', () => {
@@ -605,7 +667,7 @@ function renderChapterEditor(timeline: Timeline): void {
                     />
                 </div>
                 <div class="editor-chapter-meta">
-                    <span class="editor-chapter-meta-pill">${formatMinutesSeconds(chapterDuration(chapter))} · ${chapter.sections.length} section${chapter.sections.length === 1 ? '' : 's'}</span>
+                    <span class="editor-chapter-meta-pill">${formatSessionDuration(chapterDuration(chapter))} · ${chapter.sections.length} section${chapter.sections.length === 1 ? '' : 's'}</span>
                 </div>
             </div>
         </div>
@@ -703,7 +765,7 @@ function render(timeline: Timeline): void {
         elTotalSegments.textContent = `${timeline.chapters.length} chapter${timeline.chapters.length === 1 ? '' : 's'} · ${sectionCount} section${sectionCount === 1 ? '' : 's'}`;
     }
     if (elTotalDuration) {
-        elTotalDuration.textContent = formatDuration(totalDuration(timeline));
+        elTotalDuration.textContent = formatSessionDuration(totalDuration(timeline));
     }
 
     renderChapterList(timeline);
@@ -770,7 +832,7 @@ function handleEditorInput(event: Event): void {
                 if (duration > 0) {
                     section.durationSeconds = duration;
                     if (elTotalDuration) {
-                        elTotalDuration.textContent = formatDuration(totalDuration(timeline));
+                        elTotalDuration.textContent = formatSessionDuration(totalDuration(timeline));
                     }
                     saveCourse();
                     renderSectionList(timeline);

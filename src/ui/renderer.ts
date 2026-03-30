@@ -214,6 +214,9 @@ function renderSectionsPanel(timeline: Timeline, state: AppState, canOpenTranscr
             const toneClass = getSectionToneClass(index);
             const sectionHasTranscript = typeof chapterSection.transcript === 'string' && chapterSection.transcript.trim().length > 0;
             const notesClass = sectionHasTranscript ? ' info-section-notes-enabled' : '';
+            const instructions = chapterSection.instructions && chapterSection.instructions.trim().length > 0
+                ? chapterSection.instructions
+                : 'No instructions provided for this section.';
             return `
                 <div class="info-section ${toneClass}${isCurrent ? ' info-section-current' : ''}${notesClass}" data-section-index="${index}" tabindex="0" role="button" aria-label="View section ${index + 1}: ${escapeHtml(chapterSection.title)}${sectionHasTranscript ? ' (has transcript)' : ''}">
                     <div class="info-label-row">
@@ -221,6 +224,7 @@ function renderSectionsPanel(timeline: Timeline, state: AppState, canOpenTranscr
                         ${isCurrent ? '<span class="notes-marker" aria-hidden="true">Now</span>' : ''}
                     </div>
                     <p class="chapter-section-meta">${escapeHtml(chapterSection.type)} · ${formatTime(chapterSection.durationSeconds)}</p>
+                    <div class="chapter-section-instructions">${renderMarkdown(instructions)}</div>
                 </div>
             `;
         })
@@ -237,12 +241,8 @@ function renderNotesPanel(timeline: Timeline, state: AppState, section: Section)
         p => p.chapterIndex === state.currentChapterIndex && p.sectionIndex === state.currentSectionIndex,
     );
 
-    const hasPrev = positions.slice(0, Math.max(0, currentIndex)).some(
-        p => (timeline.chapters[p.chapterIndex].sections[p.sectionIndex].transcript || '').trim().length > 0,
-    );
-    const hasNext = positions.slice(currentIndex + 1).some(
-        p => (timeline.chapters[p.chapterIndex].sections[p.sectionIndex].transcript || '').trim().length > 0,
-    );
+    const hasPrev = currentIndex > 0;
+    const hasNext = currentIndex >= 0 && currentIndex < positions.length - 1;
 
     elPanelRightHeader.innerHTML = `
         <div class="notes-top-row">
