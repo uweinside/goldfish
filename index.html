@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CuePilot</title>
+    <link rel="preload" href="/fonts/dm-sans-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/space-grotesk-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            background: #0b0b0c;
+            color: #f5f5f5;
+        }
+
+        body.start-splash-active {
+            overflow: hidden;
+        }
+
+        #startup-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 120;
+            display: grid;
+            place-items: center;
+            padding: 1.5rem;
+            background:
+                radial-gradient(1200px at 22% 8%, rgba(251, 191, 36, 0.09), transparent),
+                radial-gradient(900px at 76% 94%, rgba(255, 255, 255, 0.05), transparent),
+                rgba(11, 11, 12, 0.96);
+        }
+
+        #startup-splash[hidden] {
+            display: none !important;
+        }
+
+        .start-splash-card {
+            width: min(36rem, 100%);
+            min-height: clamp(16.5rem, 42vh, 19.5rem);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(0, 0, 0, 0.28);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem 1.5rem;
+            gap: 0.9rem;
+        }
+    </style>
+    <link rel="stylesheet" href="/css/site.css" />
+    <script>
+        if (new URLSearchParams(window.location.search).get('from') === 'editor') {
+            document.documentElement.classList.add('skip-start-splash');
+        }
+    </script>
+</head>
+<body class="start-page start-splash-active">
+    <div id="startup-splash" class="start-splash" role="status" aria-live="polite" aria-label="CuePilot is loading">
+        <div class="start-splash-card">
+            <h1 class="start-splash-title"><span class="app-title-accent">Cue</span>Pilot</h1>
+            <p class="start-splash-tagline">Stay in flow. Stay on time.</p>
+        </div>
+    </div>
+    <main class="start-layout">
+        <div class="start-header">
+            <h1 class="app-title"><span class="app-title-accent">Cue</span>Pilot</h1>
+            <p class="app-subtitle">Select a course to begin</p>
+        </div>
+        <section id="local-courses-section" class="local-courses-section" hidden>
+            <div class="local-courses-header">
+                <h2 class="local-courses-title">My Courses</h2>
+                <button type="button" id="new-course-btn" class="editor-btn editor-btn-primary">+ New Course</button>
+            </div>
+            <p id="local-course-status" class="local-course-status" aria-live="polite" hidden></p>
+            <div id="local-course-grid" class="local-course-grid course-grid"></div>
+        </section>
+        <div id="github-courses-label" class="start-section-label" hidden>From GitHub</div>
+        <div id="course-grid" class="course-grid">
+            <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
+            <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
+            <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
+            <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
+            <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
+            <div class="course-card course-card-skeleton" aria-hidden="true"><div class="skeleton-line skeleton-code"></div><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-meta"></div></div>
+        </div>
+        <div id="pagination-controls" class="pagination-controls"></div>
+        <footer class="start-footer">&copy; 2026 by Uwe Baumann</footer>
+    </main>
+    <div id="delete-course-modal" class="modal-overlay" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="delete-course-modal-title">
+            <h2 id="delete-course-modal-title" class="modal-title">Delete course?</h2>
+            <p id="delete-course-modal-message" class="modal-message">This action cannot be undone.</p>
+            <p id="delete-course-modal-error" class="new-course-error" hidden></p>
+            <div class="modal-actions">
+                <button type="button" id="delete-course-cancel" class="control-btn control-btn-primary">Cancel</button>
+                <button type="button" id="delete-course-confirm" class="control-btn control-btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/start.ts"></script>
+</body>
+</html>

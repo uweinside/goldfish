@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Frontend build output
+dist/
+
+# Test coverage output
+coverage/
+
+# Rust and Tauri build output
+target/
+src-tauri/target/
+src-tauri/gen/
+
+# .NET build output
+bin/
+obj/
+artifacts/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Visual Studio and Rider user files
+.vs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+_ReSharper*/
+*.DotSettings.user
+
+# Local cargo config overrides
+.cargo/*.local.toml
+.cargo/config.toml
+
+# Keep shared VS Code workspace config checked in
+!.vscode/
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

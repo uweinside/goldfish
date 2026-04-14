@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "goldfish",
+  "project_id": "97defb2e-05d7-451b-aeff-814218a34caf"
+}

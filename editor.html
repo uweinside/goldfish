@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CuePilot Editor</title>
+    <link rel="preload" href="/fonts/dm-sans-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/space-grotesk-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="editor-page">
+    <main class="editor-layout" aria-label="Course editor">
+        <header class="editor-header">
+            <div class="editor-title-group">
+                <p class="editor-eyebrow">Course Editor</p>
+                <h1 id="editor-course-title" contenteditable="true" spellcheck="false" aria-label="Course title (click to edit)">Loading course...</h1>
+            </div>
+            <div class="editor-header-meta">
+                <span id="editor-total-segments">-- segments</span>
+                <span id="editor-total-duration">--</span>
+            </div>
+            <div class="editor-header-actions" aria-label="Editor actions">
+                <a id="editor-run-link" class="editor-btn editor-btn-primary" href="/">Run Course</a>
+                <a class="editor-back-link editor-btn" href="/" aria-label="Back to course listing">&larr; Back to Courses</a>
+            </div>
+        </header>
+
+        <section class="editor-content" aria-label="Editor workspace">
+            <!-- LEFT PANEL: Chapters -->
+            <div id="editor-timeline" class="editor-panel editor-timeline" aria-label="Chapters canvas">
+                <div class="editor-panel-header">
+                    <h2>Chapters</h2>
+                    <div class="editor-panel-actions" aria-label="Chapters quick actions">
+                        <button type="button" class="editor-btn" id="editor-add-chapter-btn">+ Add Chapter</button>
+                    </div>
+                </div>
+                <div id="editor-segment-list" class="editor-segment-list"></div>
+            </div>
+
+            <!-- DIVIDER 1: Between Chapters and Sections -->
+            <div
+                id="editor-divider-1"
+                class="editor-divider"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize chapters and sections"
+                aria-valuemin="20"
+                aria-valuemax="50"
+                aria-valuenow="28"
+                tabindex="0"
+            ></div>
+
+            <!-- MIDDLE PANEL: Sections -->
+            <div id="editor-info-list" class="editor-panel editor-info-list" aria-label="Sections for selected chapter">
+                <div class="editor-panel-header">
+                    <h2>Sections</h2>
+                    <div class="editor-panel-actions">
+                        <button type="button" class="editor-btn" id="editor-add-info-btn" disabled>+ Add Section</button>
+                    </div>
+                </div>
+                <div id="editor-info-sections" class="editor-info-sections"></div>
+            </div>
+
+            <!-- DIVIDER 2: Between Sections and Section Editor -->
+            <div
+                id="editor-divider-2"
+                class="editor-divider"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize sections and editor"
+                aria-valuemin="20"
+                aria-valuemax="50"
+                aria-valuenow="36"
+                tabindex="0"
+            ></div>
+
+            <!-- RIGHT PANEL: Section Editor -->
+                <aside id="editor-info-editor" class="editor-panel editor-info-editor" aria-label="Section editor">
+                <div class="editor-panel-header">
+                    <h2>Section Editor</h2>
+                    <div class="editor-panel-actions editor-panel-actions-placeholder" aria-hidden="true">
+                        <button type="button" class="editor-btn" tabindex="-1">+ Add Section</button>
+                    </div>
+                </div>
+                <div id="editor-info-editor-content" class="editor-info-editor-content"></div>
+            </aside>
+        </section>
+
+    </main>
+
+    <script type="module" src="/src/editor.ts"></script>
+</body>
+</html>
